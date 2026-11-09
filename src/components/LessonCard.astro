@@ -1,0 +1,115 @@
+---
+import type { Lesson } from '../data/lessons';
+import Icon from './Icon.astro';
+
+interface Props {
+	lesson: Lesson;
+}
+const { lesson } = Astro.props;
+const { data } = lesson;
+---
+
+<a
+	href={lesson.href}
+	class="lesson-card pf-card"
+	data-progress-slug={lesson.slug}
+	data-topic={data.topic}
+	data-level={data.level}
+>
+	<span class="top">
+		<span class="module">Module {String(data.module).padStart(2, '0')}</span>
+		<span class="status">
+			<Icon name="circle" class="todo" size="1.25rem" />
+			<Icon name="check-circle" class="done" size="1.25rem" />
+			<span class="sr-only done">Completed</span>
+		</span>
+	</span>
+	<span class="title">{data.title}</span>
+	<span class="summary">{data.summary}</span>
+	<span class="meta">
+		<span class="pf-tag">{data.topic}</span>
+		<span class="pf-tag">{data.level}</span>
+		<span class="time"><Icon name="clock" /> {data.minutes} min</span>
+		{data.outline && <span class="outline">Outline</span>}
+	</span>
+</a>
+
+<style>
+	.lesson-card {
+		display: flex;
+		flex-direction: column;
+		padding: 1.25rem;
+		height: 100%;
+		color: inherit;
+		text-decoration: none;
+		transition:
+			transform 0.15s,
+			border-color 0.15s;
+	}
+	.lesson-card:hover {
+		transform: translateY(-2px);
+		border-color: color-mix(in oklab, var(--pf-primary) 40%, transparent);
+	}
+	.top {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	.module {
+		font-family: var(--sl-font-mono);
+		font-size: 0.75rem;
+		color: var(--pf-primary);
+	}
+	.status {
+		display: inline-flex;
+		color: var(--pf-border);
+	}
+	.status .done,
+	.lesson-card[data-done] .todo {
+		display: none;
+	}
+	.lesson-card[data-done] .status .done:not(.sr-only) {
+		display: block;
+		color: var(--pf-success);
+	}
+	.lesson-card[data-done] .sr-only.done {
+		display: inline;
+	}
+	.title {
+		margin-top: 0.5rem;
+		font-family: var(--pf-font-display);
+		font-size: 1.125rem;
+		font-weight: 600;
+		line-height: 1.3;
+		letter-spacing: -0.02em;
+		color: var(--sl-color-white);
+	}
+	.lesson-card:hover .title {
+		color: var(--pf-primary);
+	}
+	.summary {
+		flex: 1;
+		margin-top: 0.35rem;
+		font-size: 0.875rem;
+		line-height: 1.6;
+		color: var(--pf-muted);
+	}
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+	.time,
+	.outline {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.75rem;
+		color: var(--pf-muted);
+	}
+	.outline {
+		font-style: italic;
+	}
+</style>

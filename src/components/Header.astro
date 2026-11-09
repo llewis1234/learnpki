@@ -1,0 +1,102 @@
+---
+import Search from 'virtual:starlight/components/Search';
+import SiteTitle from 'virtual:starlight/components/SiteTitle';
+import SocialIcons from 'virtual:starlight/components/SocialIcons';
+import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
+
+const nav = [
+	{ href: '/path/', label: 'Learning Path' },
+	{ href: '/guides/', label: 'Guides' },
+	{ href: '/glossary/', label: 'Glossary' },
+	{ href: '/setup/', label: 'Lab Setup' },
+	{ href: '/about/', label: 'About' },
+];
+
+const path = Astro.url.pathname;
+// Lesson pages live under /guides/, so they highlight "Guides".
+const isActive = (href: string) => path === href || path.startsWith(href);
+---
+
+<div class="pf-header">
+	<div class="title-wrapper sl-flex"><SiteTitle /></div>
+	<nav class="pf-nav print:hidden" aria-label="Main">
+		{
+			nav.map((n) => (
+				<a href={n.href} aria-current={isActive(n.href) ? 'page' : undefined}>
+					{n.label}
+				</a>
+			))
+		}
+	</nav>
+	<div class="sl-flex print:hidden"><Search /></div>
+	<div class="sl-hidden md:sl-flex print:hidden right-group">
+		<div class="sl-flex social-icons"><SocialIcons /></div>
+		<ThemeSelect />
+	</div>
+</div>
+
+<script>
+	import '../scripts/progress';
+</script>
+
+<style>
+	.pf-header {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		height: 100%;
+	}
+	.title-wrapper {
+		flex-shrink: 0;
+		padding: 0.25rem;
+		margin: -0.25rem;
+	}
+	.pf-nav {
+		display: flex;
+		flex: 1;
+		gap: 0.25rem;
+		min-width: 0;
+		overflow-x: auto;
+		scrollbar-width: none;
+		font-size: 0.875rem;
+	}
+	.pf-nav a {
+		white-space: nowrap;
+		border-radius: 0.4rem;
+		padding: 0.45rem 0.75rem;
+		color: var(--pf-muted);
+		text-decoration: none;
+		transition: color 0.15s;
+	}
+	.pf-nav a:hover {
+		color: var(--sl-color-white);
+	}
+	.pf-nav a[aria-current='page'] {
+		color: var(--sl-color-white);
+		background: var(--pf-secondary);
+	}
+	.right-group,
+	.social-icons {
+		gap: 1rem;
+		align-items: center;
+	}
+	.social-icons::after {
+		content: '';
+		height: 2rem;
+		border-inline-end: 1px solid var(--pf-border);
+	}
+	/* Pages with a sidebar get Starlight's mobile menu, which covers the nav links. */
+	@media (max-width: 50rem) {
+		:global([data-has-sidebar]) .pf-nav {
+			display: none;
+		}
+		.pf-header {
+			justify-content: space-between;
+		}
+	}
+	@media (min-width: 50rem) {
+		.pf-nav {
+			margin-inline-start: 1rem;
+		}
+	}
+</style>

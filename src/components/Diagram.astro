@@ -1,0 +1,147 @@
+---
+interface Props {
+	kind: 'chain' | 'mtls' | 'eaptls';
+}
+const { kind } = Astro.props;
+
+const alt = {
+	chain:
+		'Chain of trust: an offline, self-signed root CA signs an intermediate CA, and the intermediate CA signs a leaf certificate for api.example.com.',
+	mtls: 'mTLS handshake: the client sends ClientHello, the server returns its certificate and a certificate request, the client sends its certificate and proof of its key, and both sides verify each other against the CA.',
+	eaptls:
+		'EAP-TLS roles: the supplicant (a laptop or device) talks EAPOL to the authenticator (a switch or Wi-Fi access point), which relays to the RADIUS server (FreeRADIUS). Certificates are exchanged end to end inside EAP.',
+}[kind];
+
+type Box = { x: number; y: number; w: number; h: number; title: string; sub?: string; accent?: boolean };
+type Arrow = { x1: number; y1: number; x2: number; y2: number; label?: string };
+
+const layouts: Record<Props['kind'], { h: number; boxes: Box[]; arrows: Arrow[]; caption?: { y: number; text: string; strong?: boolean } }> = {
+	chain: {
+		h: 140,
+		boxes: [
+			{ x: 10, y: 40, w: 160, h: 60, title: 'Root CA', sub: 'offline, self-signed', accent: true },
+			{ x: 220, y: 40, w: 160, h: 60, title: 'Intermediate CA', sub: 'signs daily' },
+			{ x: 430, y: 40, w: 160, h: 60, title: 'Leaf certificate', sub: 'api.example.com' },
+		],
+		arrows: [
+			{ x1: 170, y1: 70, x2: 218, y2: 70, label: 'signs' },
+			{ x1: 380, y1: 70, x2: 428, y2: 70, label: 'signs' },
+		],
+	},
+	mtls: {
+		h: 230,
+		boxes: [
+			{ x: 10, y: 10, w: 140, h: 210, title: 'Client', sub: 'client.crt' },
+			{ x: 450, y: 10, w: 140, h: 210, title: 'Server', sub: 'server.crt', accent: true },
+		],
+		arrows: [
+			{ x1: 150, y1: 45, x2: 448, y2: 45, label: '1. ClientHello' },
+			{ x1: 450, y1: 85, x2: 152, y2: 85, label: '2. Server certificate + CertificateRequest' },
+			{ x1: 150, y1: 125, x2: 448, y2: 125, label: '3. Client certificate + proof of key' },
+			{ x1: 450, y1: 165, x2: 152, y2: 165, label: '4. Both verified against the CA' },
+		],
+		caption: { y: 205, text: 'Encrypted, mutually authenticated', strong: true },
+	},
+	eaptls: {
+		h: 150,
+		boxes: [
+			{ x: 10, y: 45, w: 150, h: 60, title: 'Supplicant', sub: 'laptop / device' },
+			{ x: 225, y: 45, w: 150, h: 60, title: 'Authenticator', sub: 'switch / Wi-Fi AP' },
+			{ x: 440, y: 45, w: 150, h: 60, title: 'RADIUS server', sub: 'FreeRADIUS', accent: true },
+		],
+		arrows: [
+			{ x1: 160, y1: 75, x2: 223, y2: 75, label: 'EAPOL' },
+			{ x1: 375, y1: 75, x2: 438, y2: 75, label: 'RADIUS' },
+		],
+		caption: { y: 135, text: 'Certificates exchanged end-to-end inside EAP' },
+	},
+};
+
+const { h, boxes, arrows, caption } = layouts[kind];
+const markerId = `pf-arrow-${kind}`;
+---
+
+<figure class="diagram pf-card pf-grid-bg not-content">
+	<svg viewBox={`0 0 600 ${h}`} role="img" aria-label={alt}>
+		<defs>
+			<marker id={markerId} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+				<path d="M0,0 L10,5 L0,10 z" class="fill-primary"></path>
+			</marker>
+		</defs>
+		{
+			boxes.map((b) => (
+				<g>
+					<rect x={b.x} y={b.y} width={b.w} height={b.h} rx="10" class={b.accent ? 'box accent' : 'box'} />
+					<text x={b.x + b.w / 2} y={b.y + (b.sub ? b.h / 2 - 4 : b.h / 2 + 5)} class="title">
+						{b.title}
+					</text>
+					{b.sub && (
+						<text x={b.x + b.w / 2} y={b.y + b.h / 2 + 14} class="sub">
+							{b.sub}
+						</text>
+					)}
+				</g>
+			))
+		}
+		{
+			arrows.map((a) => (
+				<g>
+					<line x1={a.x1} y1={a.y1} x2={a.x2} y2={a.y2} class="line" marker-end={`url(#${markerId})`} />
+					{a.label && (
+						<text x={(a.x1 + a.x2) / 2} y={(a.y1 + a.y2) / 2 - 6} class="sub">
+							{a.label}
+						</text>
+					)}
+				</g>
+			))
+		}
+		{caption && <text x="300" y={caption.y} class={caption.strong ? 'caption strong' : 'sub'}>{caption.text}</text>}
+	</svg>
+</figure>
+
+<style>
+	.diagram {
+		margin: 2rem 0;
+		padding: 1rem;
+	}
+	svg {
+		display: block;
+		width: 100%;
+		height: auto;
+	}
+	text {
+		text-anchor: middle;
+	}
+	.box {
+		fill: var(--pf-card);
+		stroke: var(--pf-border);
+		stroke-width: 1.5;
+	}
+	.box.accent {
+		fill: var(--pf-accent-bg);
+		stroke: var(--pf-primary);
+	}
+	.title {
+		fill: var(--sl-color-white);
+		font-family: var(--pf-font-display);
+		font-size: 14px;
+		font-weight: 600;
+	}
+	.sub {
+		fill: var(--pf-muted);
+		font-size: 11px;
+	}
+	.caption.strong {
+		fill: var(--pf-primary);
+		font-family: var(--pf-font-display);
+		font-size: 13px;
+		font-weight: 600;
+	}
+	.line {
+		stroke: var(--pf-primary);
+		stroke-width: 1.5;
+	}
+	.fill-primary {
+		fill: var(--pf-primary);
+	}
+</style>

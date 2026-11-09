@@ -1,0 +1,143 @@
+---
+import Icon from './Icon.astro';
+import Inline from './Inline.astro';
+
+interface Props {
+	cards: { q: string; a: string }[];
+}
+const { cards } = Astro.props;
+---
+
+<section class="flashcards" aria-labelledby="check-yourself">
+	<h2 id="check-yourself">Check yourself</h2>
+	<p class="pf-muted">Tap a card to flip it. Nothing is scored or saved.</p>
+	<div class="grid">
+		{
+			cards.map((card) => (
+				<button type="button" class="flip" aria-pressed="false">
+					<span class="inner">
+						<span class="face front pf-card">
+							<span class="label">Question</span>
+							<span class="text">
+								<Inline text={card.q} />
+							</span>
+							<span class="hint">
+								<Icon name="rotate" /> Tap to flip
+							</span>
+						</span>
+						<span class="face back pf-card" aria-hidden="true">
+							<span class="label">Answer</span>
+							<span class="text answer">
+								<Inline text={card.a} />
+							</span>
+							<span class="hint">
+								<Icon name="rotate" /> Tap to flip back
+							</span>
+						</span>
+					</span>
+				</button>
+			))
+		}
+	</div>
+</section>
+
+<script>
+	document.addEventListener('click', (event) => {
+		const card = (event.target as Element | null)?.closest<HTMLButtonElement>('.flashcards .flip');
+		if (!card) return;
+		const flipped = card.getAttribute('aria-pressed') !== 'true';
+		card.setAttribute('aria-pressed', String(flipped));
+		card.querySelector('.front')?.setAttribute('aria-hidden', String(flipped));
+		card.querySelector('.back')?.setAttribute('aria-hidden', String(!flipped));
+	});
+</script>
+
+<style>
+	.flashcards h2 {
+		font-size: var(--sl-text-h2);
+		color: var(--sl-color-white);
+	}
+	.flashcards > p {
+		margin-top: 0.25rem;
+	}
+	.grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr));
+		gap: 1rem;
+		margin-top: 1.25rem;
+	}
+	.flip {
+		height: 11rem;
+		padding: 0;
+		border: 0;
+		background: none;
+		font: inherit;
+		color: inherit;
+		text-align: start;
+		cursor: pointer;
+		perspective: 1000px;
+	}
+	.inner {
+		position: relative;
+		display: block;
+		height: 100%;
+		transform-style: preserve-3d;
+		transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
+	}
+	.flip[aria-pressed='true'] .inner {
+		transform: rotateY(180deg);
+	}
+	.face {
+		position: absolute;
+		inset: 0;
+		display: flex;
+		flex-direction: column;
+		justify-content: space-between;
+		padding: 1.15rem;
+		backface-visibility: hidden;
+		-webkit-backface-visibility: hidden;
+	}
+	.back {
+		transform: rotateY(180deg);
+		background: var(--pf-accent-bg);
+		border-color: color-mix(in oklab, var(--pf-primary) 35%, transparent);
+	}
+	.label {
+		font-size: 0.65rem;
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--pf-primary);
+	}
+	.back .label {
+		color: var(--pf-accent-fg);
+	}
+	.text {
+		font-family: var(--pf-font-display);
+		font-size: 1.05rem;
+		font-weight: 500;
+		line-height: 1.35;
+		color: var(--sl-color-white);
+	}
+	.answer {
+		font-family: var(--sl-font);
+		font-size: 0.95rem;
+		font-weight: 400;
+	}
+	.text :global(code) {
+		font-size: 0.85em;
+		color: var(--pf-accent-fg);
+	}
+	.hint {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-size: 0.75rem;
+		color: var(--pf-muted);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.inner {
+			transition: none;
+		}
+	}
+</style>

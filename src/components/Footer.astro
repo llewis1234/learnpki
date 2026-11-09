@@ -1,0 +1,78 @@
+---
+import Default from '@astrojs/starlight/components/Footer.astro';
+import FlashCards from './FlashCards.astro';
+import Icon from './Icon.astro';
+
+const { id, data } = Astro.locals.starlightRoute.entry;
+const isLesson = id.startsWith('guides/') && data.module !== undefined;
+const slug = id.replace(/^guides\//, '');
+---
+
+{
+	isLesson && (
+		<div class="lesson-end">
+			{data.cards.length > 0 && <FlashCards cards={data.cards} />}
+			<button type="button" class="complete" data-mark-complete={slug} aria-pressed="false">
+				<Icon name="check" /> <span data-label>Mark complete</span>
+			</button>
+			<p class="pf-muted note">Progress is saved in this browser only.</p>
+		</div>
+	)
+}
+
+<Default><slot /></Default>
+
+<div class="site-footer-note">
+	<p>pki.fun — learn certificates by building with open-source tools.</p>
+	<p>An independent project. Not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.</p>
+	<p>
+		Code and labs: <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a>.
+		Lesson text: <a href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</a>.
+	</p>
+</div>
+
+<style>
+	.lesson-end {
+		margin-top: 3rem;
+	}
+	.complete {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 2rem;
+		border: 1px solid var(--pf-border);
+		border-radius: 0.6rem;
+		background: var(--pf-card);
+		color: var(--sl-color-white);
+		padding: 0.65rem 1.1rem;
+		font: inherit;
+		font-weight: 500;
+		cursor: pointer;
+		box-shadow: var(--pf-shadow);
+	}
+	.complete:hover {
+		background: var(--pf-secondary);
+	}
+	.complete[aria-pressed='true'] {
+		background: var(--pf-success);
+		border-color: var(--pf-success);
+		color: white;
+	}
+	.note {
+		margin-top: 0.5rem;
+		font-size: var(--sl-text-xs);
+	}
+	.site-footer-note {
+		margin-top: 2.5rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid var(--pf-border);
+		color: var(--pf-muted);
+		font-size: var(--sl-text-xs);
+	}
+	.site-footer-note p {
+		margin: 0.25rem 0;
+	}
+	.site-footer-note a {
+		color: var(--sl-color-text-accent);
+	}
+</style>

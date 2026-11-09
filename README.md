@@ -1,49 +1,41 @@
-# Starlight Starter Kit: Basics
+# pki.fun
 
-[![Built with Starlight](https://astro.badg.es/v2/built-with-starlight/tiny.svg)](https://starlight.astro.build)
+pki.fun is a free, open-source place to learn certificate technologies by building them. Short explanations pair with hands-on labs that use open-source tools: the step CLI and step-ca, OpenSSL, nginx, FreeRADIUS and curl.
 
-```
-npm create astro@latest -- --template starlight
-```
+The Learning Path has six modules:
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+1. PKI Foundations
+2. Build your own CA with step-ca
+3. Issue and inspect certificates with step CLI
+4. mTLS: secure a service with nginx
+5. EAP-TLS with FreeRADIUS
+6. Operations: renewal, rotation and troubleshooting
 
-## 🚀 Project Structure
+## Run locally
 
-Inside of your Astro + Starlight project, you'll see the following folders and files:
+Use the Node.js version in `.nvmrc`, then install dependencies and start Astro:
 
-```
-.
-├── public/
-├── src/
-│   ├── assets/
-│   ├── content/
-│   │   └── docs/
-│   └── content.config.ts
-├── astro.config.mjs
-├── package.json
-└── tsconfig.json
+```sh
+npm ci
+npm run dev
 ```
 
-Starlight looks for `.md` or `.mdx` files in the `src/content/docs/` directory. Each file is exposed as a route based on its file name.
+Build the static site with:
 
-Images can be added to `src/assets/` and embedded in Markdown with a relative link.
+```sh
+npm run build
+```
 
-Static assets, like favicons, can be placed in the `public/` directory.
+The build also checks internal Markdown and MDX links.
 
-## 🧞 Commands
+## Project status
 
-All commands are run from the root of the project, from a terminal:
+Modules 1, 2 and 4 have full lessons. Modules 3, 5 and 6 are outlines. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `npm install`             | Installs dependencies                            |
-| `npm run dev`             | Starts local dev server at `localhost:4321`      |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run preview`         | Preview your build locally, before deploying     |
-| `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `npm run astro -- --help` | Get help using the Astro CLI                     |
+## Licenses
 
-## 👀 Want to learn more?
+Code and lab files are licensed under Apache-2.0. Lesson text is licensed under CC BY 4.0. See [LICENSE](LICENSE) and [LICENSE-CONTENT](LICENSE-CONTENT).
 
-Check out [Starlight’s docs](https://starlight.astro.build/), read [the Astro documentation](https://docs.astro.build), or jump into the [Astro Discord server](https://astro.build/chat).
+## Disclaimer
+
+pki.fun is an independent project. It is not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.

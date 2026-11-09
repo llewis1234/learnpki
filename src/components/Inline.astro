@@ -1,0 +1,7 @@
+---
+/** Renders plain text, turning `backtick` spans into <code>. */
+const { text } = Astro.props as { text: string };
+const parts = text.split(/(`[^`]+`)/g).filter(Boolean);
+---
+
+{parts.map((p) => (p.startsWith('`') && p.endsWith('`') ? <code>{p.slice(1, -1)}</code> : p))}

@@ -1,0 +1,96 @@
+---
+import { getLessons, levels, topics } from '../data/lessons';
+import LessonCard from './LessonCard.astro';
+
+const lessons = await getLessons();
+---
+
+<div class="pf-wide guides not-content">
+	<p class="pf-muted">Read in any order. Filter by topic or level.</p>
+	<div class="filters" hidden>
+		<div class="chips" role="group" aria-label="Filter by topic">
+			<button type="button" class="pf-chip" data-filter="topic" data-value="" aria-pressed="true">All topics</button>
+			{topics.map((t) => <button type="button" class="pf-chip" data-filter="topic" data-value={t} aria-pressed="false">{t}</button>)}
+		</div>
+		<div class="chips" role="group" aria-label="Filter by level">
+			<button type="button" class="pf-chip" data-filter="level" data-value="" aria-pressed="true">All levels</button>
+			{levels.map((l) => <button type="button" class="pf-chip" data-filter="level" data-value={l} aria-pressed="false">{l}</button>)}
+		</div>
+	</div>
+	<ul class="grid">
+		{
+			lessons.map((l) => (
+				<li data-topic={l.data.topic} data-level={l.data.level}>
+					<LessonCard lesson={l} />
+				</li>
+			))
+		}
+	</ul>
+	<p class="empty pf-muted" hidden>No guides match those filters yet.</p>
+</div>
+
+<script>
+	const root = document.querySelector<HTMLElement>('.guides');
+	if (root) {
+		// Filters need JavaScript; without it, every guide stays visible.
+		root.querySelector<HTMLElement>('.filters')!.hidden = false;
+		const state = { topic: '', level: '' };
+		const items = [...root.querySelectorAll<HTMLElement>('.grid > li')];
+		const empty = root.querySelector<HTMLElement>('.empty')!;
+
+		root.addEventListener('click', (event) => {
+			const chip = (event.target as Element).closest<HTMLButtonElement>('button[data-filter]');
+			if (!chip) return;
+			const key = chip.dataset.filter as keyof typeof state;
+			state[key] = chip.dataset.value ?? '';
+			root.querySelectorAll<HTMLButtonElement>(`button[data-filter="${key}"]`).forEach((b) => {
+				b.setAttribute('aria-pressed', String(b === chip));
+			});
+			let shown = 0;
+			for (const item of items) {
+				const match =
+					(!state.topic || item.dataset.topic === state.topic) && (!state.level || item.dataset.level === state.level);
+				item.hidden = !match;
+				if (match) shown++;
+			}
+			empty.hidden = shown > 0;
+		});
+	}
+</script>
+
+<style>
+	.guides > :global(* + *) {
+		margin-top: 0;
+	}
+	.filters {
+		margin-top: 2rem;
+	}
+	.filters[hidden] {
+		display: none;
+	}
+	.chips {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.5rem;
+	}
+	.chips + .chips {
+		margin-top: 0.75rem;
+	}
+	.grid {
+		display: grid;
+		gap: 1.25rem;
+		grid-template-columns: repeat(auto-fill, minmax(min(18rem, 100%), 1fr));
+		margin-top: 2.5rem;
+		padding: 0;
+		list-style: none;
+	}
+	.grid > li {
+		margin: 0;
+	}
+	.grid > li[hidden] {
+		display: none;
+	}
+	.empty {
+		margin-top: 2.5rem;
+	}
+</style>

@@ -1,0 +1,59 @@
+---
+import { getLessons } from '../data/lessons';
+import LessonCard from './LessonCard.astro';
+import ProgressBar from './ProgressBar.astro';
+
+const lessons = await getLessons();
+---
+
+<div class="pf-wide path not-content">
+	<p class="lede pf-muted">
+		A suggested order from first principles to production-style labs. Your progress is saved in this browser only.
+	</p>
+	<ProgressBar slugs={lessons.map((l) => l.slug)} />
+	<ol>
+		{
+			lessons.map((l) => (
+				<li>
+					<LessonCard lesson={l} />
+				</li>
+			))
+		}
+	</ol>
+</div>
+
+<style>
+	.path {
+		max-width: 56rem;
+	}
+	.path > :global(* + *) {
+		margin-top: 2rem;
+	}
+	.lede {
+		max-width: 40rem;
+		font-size: 1.05rem;
+	}
+	ol {
+		list-style: none;
+		margin-top: 3rem;
+		padding-inline-start: 2rem;
+		border-inline-start: 2px dashed var(--pf-border);
+	}
+	li {
+		position: relative;
+	}
+	li + li {
+		margin-top: 1.5rem;
+	}
+	li::before {
+		content: '';
+		position: absolute;
+		inset-inline-start: calc(-2rem - 11px);
+		top: 1.25rem;
+		width: 1.25rem;
+		height: 1.25rem;
+		border: 2px solid var(--pf-primary);
+		border-radius: 999px;
+		background: var(--sl-color-bg);
+	}
+</style>

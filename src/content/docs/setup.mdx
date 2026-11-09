@@ -1,0 +1,95 @@
+---
+title: Lab Setup
+description: Install step CLI, step-ca, OpenSSL, nginx and FreeRADIUS on Linux, macOS or Windows (WSL).
+---
+
+import { Tabs, TabItem, CardGrid, Card } from '@astrojs/starlight/components';
+
+Everything runs locally and is free. Plan on about 15 minutes.
+
+## What you'll need
+
+<CardGrid>
+	<Card title="step CLI">Request, inspect and manage certificates.</Card>
+	<Card title="step-ca">Your own private certificate authority.</Card>
+	<Card title="OpenSSL">The classic toolkit, for cross-checking.</Card>
+	<Card title="nginx">Web server for the mTLS lab.</Card>
+	<Card title="FreeRADIUS">RADIUS server for the EAP-TLS lab.</Card>
+	<Card title="curl">Test clients from the terminal.</Card>
+</CardGrid>
+
+The lessons are written against **step CLI 0.31.0** and **step-ca 0.30.2**. Newer versions should work, but output may differ slightly.
+
+## Install
+
+<Tabs syncKey="os">
+<TabItem label="Linux (Debian/Ubuntu)">
+
+Download and install the step CLI package:
+
+```sh title="terminal"
+wget https://github.com/smallstep/cli/releases/download/v0.31.0/step-cli_0.31.0-1_amd64.deb
+sudo dpkg -i step-cli_0.31.0-1_amd64.deb
+```
+
+Download and install the step-ca package:
+
+```sh title="terminal"
+wget https://github.com/smallstep/certificates/releases/download/v0.30.2/step-ca_0.30.2-1_amd64.deb
+sudo dpkg -i step-ca_0.30.2-1_amd64.deb
+```
+
+Install the remaining tools from your distribution:
+
+{/* UNVERIFIED: package names not tested on a clean Debian/Ubuntu machine. */}
+
+```sh title="terminal"
+sudo apt install -y openssl nginx freeradius curl
+```
+
+On ARM machines, swap `amd64` for `arm64` in both file names.
+
+</TabItem>
+<TabItem label="macOS">
+
+Install everything with [Homebrew](https://brew.sh). The `step` formula includes both `step` and `step-ca`:
+
+```sh title="terminal"
+brew install step openssl nginx freeradius-server
+```
+
+Homebrew installs the latest release, which may be newer than the versions above.
+
+</TabItem>
+<TabItem label="Windows (WSL)">
+
+Install Ubuntu under WSL from an administrator PowerShell:
+
+```powershell title="PowerShell"
+wsl --install -d Ubuntu
+```
+
+Then open Ubuntu and follow the Linux steps.
+
+</TabItem>
+</Tabs>
+
+## Check it worked
+
+```sh title="terminal"
+step version
+```
+
+{/* UNVERIFIED: output captured with step 0.28.2; the pinned 0.31.0 should print the same shape. */}
+
+```text title="Expected output"
+Smallstep CLI/0.31.0 (linux/amd64)
+```
+
+The platform in brackets matches your machine, for example `darwin/arm64` on an Apple silicon Mac.
+
+:::note[Prefer containers?]
+You can run step-ca with Docker instead, using the official [smallstep/step-ca image](https://hub.docker.com/r/smallstep/step-ca). Commands in the lessons work the same once your CLI points at it.
+:::
+
+Package names and versions change over time. Check each project's official install docs if a command fails.

@@ -1,0 +1,109 @@
+---
+title: Build your own CA with step-ca
+description: Stand up a private root and intermediate CA on your own machine using the open-source step-ca.
+summary: Stand up a private root and intermediate CA on your own machine using the open-source step-ca.
+module: 2
+topic: Tools
+level: Beginner
+minutes: 30
+sidebar:
+  label: 2. Build your own CA
+cards:
+  - q: What two CA certificates does `step ca init` create?
+    a: A root CA and an intermediate CA.
+  - q: Why is the root certificate's Issuer the same as its Subject?
+    a: It is self-signed — nothing above it vouches for it.
+  - q: What is a provisioner in step-ca?
+    a: An identity or method allowed to request certificates from the CA, such as a password-protected admin.
+---
+
+Reading about CAs only goes so far. In this lab you'll run your own, using `step-ca`, an open-source CA server, and the `step` command-line tool. Make sure you've followed [Lab Setup](/setup/) first.
+
+## Initialize the CA
+
+`step ca init` creates a root CA, an intermediate CA, and a config file. It asks you to choose a password for the CA keys. Pick a real one and keep it safe.
+
+```sh title="terminal"
+step ca init \
+  --name "pki.fun Lab" \
+  --dns localhost \
+  --address 127.0.0.1:9000 \
+  --provisioner admin@example.com
+```
+
+```text title="Expected output"
+Generating root certificate... done!
+Generating intermediate certificate... done!
+
+✔ Root certificate: ~/.step/certs/root_ca.crt
+✔ Root private key: ~/.step/secrets/root_ca_key
+✔ Root fingerprint: 04b3beb2eac1f1ec1de352b7aa7fe1ebb27ea2dc67cc49597dc00a0a634162cb
+✔ Intermediate certificate: ~/.step/certs/intermediate_ca.crt
+✔ Intermediate private key: ~/.step/secrets/intermediate_ca_key
+✔ Database folder: ~/.step/db
+✔ Default configuration: ~/.step/config/defaults.json
+✔ Certificate Authority configuration: ~/.step/config/ca.json
+
+Your PKI is ready to go. To generate certificates for individual services see 'step help ca'.
+```
+
+Your fingerprint will be different. Every new root gets its own.
+
+:::note[Write down the fingerprint]
+The root fingerprint lets other machines bootstrap trust in your CA safely. You'll use it in the next module.
+:::
+
+## Start the CA server
+
+Start step-ca with the config it just wrote. Enter your CA password when asked.
+
+```sh title="terminal"
+step-ca $(step path)/config/ca.json
+```
+
+{/* UNVERIFIED: captured with step-ca 0.28.1 on macOS; the version line is edited to the pinned 0.30.2. Re-capture with the pinned release. */}
+
+```text title="Expected output (excerpt)"
+Starting Smallstep CA/0.30.2 (linux/amd64)
+Config file: ~/.step/config/ca.json
+The primary server URL is https://localhost:9000
+Root certificates are available at https://localhost:9000/roots.pem
+X.509 Root Fingerprint: 04b3beb2eac1f1ec1de352b7aa7fe1ebb27ea2dc67cc49597dc00a0a634162cb
+Serving HTTPS on 127.0.0.1:9000 ...
+```
+
+Each real log line also starts with a date and time. Leave this terminal running.
+
+## Check it's healthy
+
+Open a second terminal and ask the CA for its health status:
+
+```sh title="terminal"
+curl --cacert $(step path)/certs/root_ca.crt https://localhost:9000/health
+```
+
+```text title="Expected output"
+{"status":"ok"}
+```
+
+## Look inside your root
+
+```sh title="terminal"
+step certificate inspect $(step path)/certs/root_ca.crt --short
+```
+
+```text title="Expected output"
+X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 8362...6093]
+  Subject:     pki.fun Lab Root CA
+  Issuer:      pki.fun Lab Root CA
+  Valid from:  2026-11-09T02:16:00Z
+          to:  2036-11-06T02:16:00Z
+```
+
+Notice the Subject and Issuer are the same — that's what makes it a self-signed root. Your serial number and dates will differ.
+
+## Go deeper
+
+- [step-ca documentation](https://smallstep.com/docs/step-ca/)
+- [`step ca init` reference](https://smallstep.com/docs/step-cli/reference/ca/init/)
+- [step-ca source code](https://github.com/smallstep/certificates)

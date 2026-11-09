@@ -1,0 +1,40 @@
+---
+interface Props {
+	slugs: string[];
+}
+const { slugs } = Astro.props;
+---
+
+<div class="progress" data-progress-bar data-slugs={slugs.join(' ')}>
+	<div class="labels">
+		<span><span data-progress-count>0</span> of {slugs.length} lessons complete</span>
+		<span data-progress-pct>0%</span>
+	</div>
+	<div class="track"><div class="fill" data-progress-fill></div></div>
+</div>
+
+<style>
+	.progress {
+		max-width: 28rem;
+	}
+	.labels {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 0.4rem;
+		font-size: 0.75rem;
+		color: var(--pf-muted);
+	}
+	.track {
+		height: 0.5rem;
+		overflow: hidden;
+		border-radius: 999px;
+		background: var(--pf-secondary);
+	}
+	.fill {
+		width: 0;
+		height: 100%;
+		border-radius: 999px;
+		background: var(--pf-primary);
+		transition: width 0.3s;
+	}
+</style>

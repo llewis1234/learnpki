@@ -1,0 +1,38 @@
+---
+title: EAP-TLS with FreeRADIUS
+description: Use certificates instead of passwords to join Wi-Fi or wired networks.
+summary: Use certificates instead of passwords to join Wi-Fi or wired networks.
+module: 5
+topic: EAP-TLS
+level: Advanced
+minutes: 45
+outline: true
+sidebar:
+  label: 5. EAP-TLS with FreeRADIUS
+cards:
+  - q: In 802.1X, what is the supplicant?
+    a: The device trying to join the network (laptop, phone, IoT device).
+  - q: What does the authenticator do?
+    a: The switch or access point relays EAP messages and opens the port once the RADIUS server approves.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+
+**EAP-TLS** is how many organisations let devices onto a network without passwords. The device presents a certificate, a RADIUS server checks it, and the switch or access point opens the port.
+
+<Diagram kind="eaptls" />
+
+:::note[Outline]
+This lesson is coming soon. Here's what it will cover.
+:::
+
+- The roles: supplicant, authenticator, authentication server.
+- Installing FreeRADIUS and pointing it at your step-ca certificates.
+- Configuring the `eap` module for TLS.
+- Testing locally with `eapol_test` — no access point required.
+- Connecting a real Linux, macOS or Windows client.
+
+## Go deeper
+
+- [RFC 5216](https://datatracker.ietf.org/doc/html/rfc5216) — the EAP-TLS authentication protocol.
+- [FreeRADIUS documentation](https://www.freeradius.org/documentation/)

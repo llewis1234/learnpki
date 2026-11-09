@@ -1,0 +1,61 @@
+---
+title: PKI Foundations
+description: Keys, certificates, certificate authorities, chains of trust and revocation — the ideas everything else builds on.
+summary: Keys, certificates, certificate authorities, chains of trust and revocation — the ideas everything else builds on.
+module: 1
+topic: PKI
+level: Beginner
+minutes: 25
+sidebar:
+  label: 1. PKI Foundations
+cards:
+  - q: What does a certificate bind together?
+    a: A public key and an identity (like a hostname or device), signed by a CA.
+  - q: Why keep the root CA offline?
+    a: If the root key leaks, every certificate under it is untrustworthy. Intermediates do the daily signing instead.
+  - q: What is the difference between a CRL and OCSP?
+    a: A CRL is a published list of revoked certificates; OCSP is a live query asking about one certificate.
+  - q: Which field lists the names a certificate is valid for?
+    a: The Subject Alternative Name (SAN) extension.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+
+Public Key Infrastructure (PKI) is the set of people, policies and software that lets two strangers on a network decide whether to trust each other. Every padlock in your browser, every signed software update and every enterprise Wi-Fi login leans on it.
+
+## Key pairs
+
+It starts with a **key pair**: a private key you keep secret and a public key you can hand to anyone. Data signed with the private key can be verified with the public key. Nobody can forge that signature without the private key.
+
+:::caution[Guard the private key]
+Whoever holds a private key can impersonate its owner. Never email it, commit it to git, or paste it into a chat.
+:::
+
+## Certificates
+
+A public key on its own says nothing about who owns it. A **certificate** binds a public key to an identity — a hostname, a person, a device — and is signed by someone you already trust. The common format is **X.509**.
+
+- `Subject` — who the certificate is for.
+- `Subject Alternative Name (SAN)` — the names it is actually valid for, like `api.example.com`.
+- `Issuer` — the authority that signed it.
+- `Validity` — not-before and not-after dates.
+- `Key Usage / Extended Key Usage` — what it may be used for, such as server auth or client auth.
+
+## Certificate authorities and chains
+
+A **Certificate Authority (CA)** signs certificates. Usually a long-lived root CA, kept offline, signs an intermediate CA. The intermediate signs everyday leaf certificates. A verifier walks the chain from the leaf up until it reaches a root it already trusts.
+
+<Diagram kind="chain" />
+
+## When trust ends: expiry and revocation
+
+Certificates expire on purpose — short lifetimes limit the damage of a stolen key. When a key is compromised before then, the CA can **revoke** the certificate. It publishes that through a **CRL** (a list) or **OCSP** (a live lookup).
+
+:::tip[Modern practice]
+Many teams now prefer short-lived certificates (hours or days) with automatic renewal over relying on revocation checks. You'll see this in later modules with step-ca.
+:::
+
+## Go deeper
+
+- [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) — the X.509 certificate and CRL profile.
+- [RFC 6960](https://datatracker.ietf.org/doc/html/rfc6960) — OCSP.

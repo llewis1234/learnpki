@@ -1,0 +1,74 @@
+---
+import Icon from './Icon.astro';
+
+const { id, data } = Astro.locals.starlightRoute.entry;
+const isLesson = id.startsWith('guides/') && data.module !== undefined;
+// The homepage renders its own <h1 id="_top"> inside its hero.
+const isHome = Astro.locals.starlightRoute.id === '';
+---
+
+{
+	isHome ? (
+		<span class="pf-no-title" hidden />
+	) : isLesson ? (
+		<div class="lesson-head">
+			<span class="module">Module {String(data.module).padStart(2, '0')}</span>
+			<h1 id="_top">{data.title}</h1>
+			{data.summary && <p class="summary">{data.summary}</p>}
+			<div class="meta">
+				{data.topic && <span class="pf-tag">{data.topic}</span>}
+				{data.level && <span class="pf-tag">{data.level}</span>}
+				{data.minutes && (
+					<span class="time">
+						<Icon name="clock" /> {data.minutes} min
+					</span>
+				)}
+				{data.outline && <span class="outline">Outline</span>}
+			</div>
+		</div>
+	) : (
+		<h1 id="_top">{data.title}</h1>
+	)
+}
+
+<style>
+	h1 {
+		margin-top: 1rem;
+		font-size: var(--sl-text-h1);
+		line-height: var(--sl-line-height-headings);
+		font-weight: 700;
+		color: var(--sl-color-white);
+	}
+	.lesson-head h1 {
+		margin-top: 0.25rem;
+	}
+	.module {
+		font-family: var(--sl-font-mono);
+		font-size: 0.75rem;
+		color: var(--pf-primary);
+	}
+	.summary {
+		margin-top: 0.75rem;
+		font-size: 1.1rem;
+		line-height: 1.6;
+		color: var(--pf-muted);
+	}
+	.meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem;
+		margin-top: 1rem;
+	}
+	.time,
+	.outline {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.25rem;
+		font-size: 0.75rem;
+		color: var(--pf-muted);
+	}
+	.outline {
+		font-style: italic;
+	}
+</style>
