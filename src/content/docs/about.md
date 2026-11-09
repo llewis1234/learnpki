@@ -21,4 +21,4 @@ pki.fun is an independent project. It is not affiliated with or endorsed by Smal
 
 ## Contribute
 
-The source for the site and the labs is on [GitHub](https://github.com/llewis1234/pki-fun). Code and labs are licensed under Apache-2.0. Lesson text is licensed under CC BY 4.0.
+The source for the site and the labs is on [GitHub](https://github.com/llewis1234/pki-fun). Code and labs are licensed under Apache-2.0. Lesson text is licensed under CC BY-NC-SA 4.0.

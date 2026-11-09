@@ -36,7 +36,7 @@ Modules 1, 2 and 4 have full lessons. Modules 3, 5, 6, 7 and 8 are outlines. The
 
 ## Licenses
 
-Code and lab files are licensed under Apache-2.0. Lesson text is licensed under CC BY 4.0. See [LICENSE](LICENSE) and [LICENSE-CONTENT](LICENSE-CONTENT).
+Code and lab files are licensed under Apache-2.0. Lesson text is licensed under CC BY-NC-SA 4.0. See [LICENSE](LICENSE) and [LICENSE-CONTENT](LICENSE-CONTENT).
 
 ## Disclaimer
 

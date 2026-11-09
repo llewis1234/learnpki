@@ -23,4 +23,4 @@ For lab changes, run the lab's `solution.sh` followed by `check.sh` in order.
 
 ## Licensing
 
-Code and lab contributions are licensed under Apache-2.0. Lesson text contributions are licensed under CC BY 4.0.
+Code and lab contributions are licensed under Apache-2.0. Lesson text contributions are licensed under CC BY-NC-SA 4.0.
