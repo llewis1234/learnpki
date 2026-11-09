@@ -16,7 +16,7 @@
 
 ## Site structure
 
-- Lessons live in `src/content/docs/guides/` and are ordered by the `module` frontmatter field. Each lesson sets `module`, `summary`, `topic` (PKI, mTLS, EAP-TLS, Tools), `level`, `minutes`, a numbered `sidebar.label`, and optional `cards` (flip cards) and `outline: true`.
+- Lessons live in `src/content/docs/guides/` and are ordered by the `module` frontmatter field. Each lesson sets `module`, `summary`, `topic` (PKI, mTLS, EAP-TLS, ACME, SSH, Tools), `level`, `minutes`, a numbered `sidebar.label`, and optional `cards` (flip cards) and `outline: true`.
 - When adding a lesson, also add its slug to the `lessons` list in `astro.config.mjs`.
 - Use `.mdx` when a lesson needs `<Diagram kind="chain|mtls|eaptls" />`; otherwise `.md`.
 - Glossary terms live in `src/data/glossary.ts`.

@@ -2,7 +2,7 @@
 
 pki.fun is a free, open-source place to learn certificate technologies by building them. Short explanations pair with hands-on labs that use open-source tools: the step CLI and step-ca, OpenSSL, nginx, FreeRADIUS and curl.
 
-The Learning Path has six modules:
+The Learning Path has eight modules:
 
 1. PKI Foundations
 2. Build your own CA with step-ca
@@ -10,6 +10,8 @@ The Learning Path has six modules:
 4. mTLS: secure a service with nginx
 5. EAP-TLS with FreeRADIUS
 6. Operations: renewal, rotation and troubleshooting
+7. ACME: automate certificate issuance
+8. SSH certificates
 
 ## Run locally
 
@@ -30,7 +32,7 @@ The build also checks internal Markdown and MDX links.
 
 ## Project status
 
-Modules 1, 2 and 4 have full lessons. Modules 3, 5 and 6 are outlines. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
+Modules 1, 2 and 4 have full lessons. Modules 3, 5, 6, 7 and 8 are outlines. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
 
 ## Licenses
 

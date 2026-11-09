@@ -17,5 +17,5 @@ export async function getLessons(): Promise<Lesson[]> {
 		.sort((a, b) => a.data.module - b.data.module);
 }
 
-export const topics = ['PKI', 'mTLS', 'EAP-TLS', 'Tools'] as const;
+export const topics = ['PKI', 'mTLS', 'EAP-TLS', 'ACME', 'SSH', 'Tools'] as const;
 export const levels = ['Beginner', 'Intermediate', 'Advanced'] as const;

@@ -10,6 +10,8 @@ const lessons = [
 	'guides/mtls-nginx',
 	'guides/eap-tls-freeradius',
 	'guides/operations',
+	'guides/acme',
+	'guides/ssh-certificates',
 ];
 
 export default defineConfig({

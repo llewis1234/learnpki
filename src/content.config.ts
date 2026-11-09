@@ -7,7 +7,7 @@ import { docsSchema, i18nSchema } from '@astrojs/starlight/schema';
 const lessonFields = z.object({
 	module: z.number().int().positive().optional(),
 	summary: z.string().optional(),
-	topic: z.enum(['PKI', 'mTLS', 'EAP-TLS', 'Tools']).optional(),
+	topic: z.enum(['PKI', 'mTLS', 'EAP-TLS', 'ACME', 'SSH', 'Tools']).optional(),
 	level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional(),
 	minutes: z.number().int().positive().optional(),
 	/** True while a lesson is only an outline. */

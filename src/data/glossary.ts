@@ -1,6 +1,7 @@
 /** Glossary terms. Add a term here the first time a lesson uses it. */
 export const glossary: { term: string; def: string }[] = [
 	{ term: '802.1X', def: 'An IEEE standard for port-based network access control. It carries EAP between a device and the network.' },
+	{ term: 'ACME', def: 'Automated Certificate Management Environment — a protocol that lets clients prove control of a name and get certificates automatically.' },
 	{ term: 'Authenticator', def: 'In 802.1X, the switch or access point that relays EAP messages and opens the port once the RADIUS server approves.' },
 	{ term: 'CA (Certificate Authority)', def: 'An entity that signs certificates, vouching that a public key belongs to a given identity.' },
 	{ term: 'Certificate', def: 'A signed document that binds a public key to an identity, such as a hostname, person or device.' },
@@ -27,6 +28,7 @@ export const glossary: { term: string; def: string }[] = [
 	{ term: 'Root CA', def: 'A self-signed CA at the top of a chain. Its certificate is installed directly in trust stores.' },
 	{ term: 'SAN', def: 'Subject Alternative Name — the list of names (DNS, IP, email, URI) a certificate is valid for.' },
 	{ term: 'Self-signed certificate', def: 'A certificate whose issuer is itself. Root CA certificates are self-signed.' },
+	{ term: 'SSH certificate', def: 'An OpenSSH public key signed by an SSH CA, with a validity period and allowed users or hosts. Not X.509.' },
 	{ term: 'Subject', def: 'The certificate field naming who the certificate is for.' },
 	{ term: 'Supplicant', def: 'The client software on a device that performs 802.1X/EAP authentication.' },
 	{ term: 'TLS', def: 'Transport Layer Security — the protocol that encrypts and authenticates connections, like HTTPS.' },
