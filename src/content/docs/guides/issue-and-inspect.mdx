@@ -1,0 +1,399 @@
+---
+title: Issue and inspect certificates with step CLI
+description: Request server and client certificates, read every field, and verify chains.
+summary: Request server and client certificates, read every field, and verify chains.
+module: 3
+topic: Tools
+level: Beginner
+minutes: 25
+sidebar:
+  label: 3. Issue and inspect certificates
+cards:
+  - q: What does a new machine need before it can safely talk to your CA?
+    a: The root certificate. `step ca bootstrap` downloads it and checks it against the fingerprint you supply.
+  - q: Which field decides the names a certificate is valid for?
+    a: The Subject Alternative Name (SAN). Clients ignore the Common Name when a SAN is present.
+  - q: Why does `web.crt` contain two certificates?
+    a: step-ca returns the leaf and the intermediate together, so clients can build the chain to the root.
+  - q: What does `step certificate verify` print on success?
+    a: Nothing. It exits with code 0. Silence is success.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+
+Your CA from [module 2](/guides/build-your-ca/) is running. Now put it to work. You'll get a server certificate and a client certificate, read every field, and check the chain the way a browser does.
+
+Keep the CA running in its own terminal. Do this lesson in a second terminal.
+
+## How issuing works
+
+Three things happen when you run `step ca certificate`:
+
+1. **step makes a key pair on your machine.** The private key never leaves your computer. The CA never sees it.
+2. **step builds a CSR.** A **certificate signing request** holds your new public key and the names you want. step signs it with the new private key, which proves you hold that key.
+3. **The CA checks your right to ask.** Your **provisioner** password unlocks a short-lived token. The CA checks the token, signs the certificate and sends it back.
+
+That split is the point. The CA vouches for the public key. Only you hold the private key.
+
+## 1. Make a working folder
+
+```sh title="terminal"
+mkdir -p ~/pki-fun-lab/issue && cd ~/pki-fun-lab/issue
+```
+
+## 2. Bootstrap trust from another machine
+
+On the CA machine, step is already configured. A laptop or server is not. It needs your root certificate, and it must be sure it got the real one.
+
+`step ca bootstrap` downloads the root and compares its **fingerprint** with the one you type. If they don't match, it stops.
+
+Print your root fingerprint:
+
+```sh title="terminal"
+step certificate fingerprint $(step path)/certs/root_ca.crt
+```
+
+```text title="Expected output"
+cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
+```
+
+Your fingerprint is different. Use yours in the next step.
+
+Pretend to be a new laptop. Point `STEPPATH` at an empty folder, then bootstrap:
+
+```sh title="terminal"
+STEPPATH=~/pki-fun-lab/laptop step ca bootstrap \
+  --ca-url https://localhost:9000 \
+  --fingerprint <your-fingerprint>
+```
+
+```text title="Expected output"
+The root certificate has been saved in /home/you/pki-fun-lab/laptop/certs/root_ca.crt.
+The authority configuration has been saved in /home/you/pki-fun-lab/laptop/config/defaults.json.
+```
+
+`STEPPATH` tells step where to keep its files. Here it keeps the "laptop" apart from your CA's own `~/.step` folder.
+
+:::tip[Why a fingerprint and not just HTTPS?]
+The laptop doesn't trust your CA yet, so it can't check the CA's HTTPS certificate. The fingerprint breaks that loop. You copy 64 characters over a channel you already trust, like your own screen.
+:::
+
+## 3. Issue a server certificate
+
+Ask for a certificate for `web.example.com`. Add `localhost` and `127.0.0.1` so you can test it on this machine.
+
+```sh title="terminal"
+step ca certificate web.example.com web.crt web.key \
+  --san web.example.com --san localhost --san 127.0.0.1
+```
+
+Enter the provisioner password when asked.
+
+```text title="Expected output"
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ CA: https://localhost:9000
+✔ Certificate: web.crt
+✔ Private Key: web.key
+```
+
+When you add any `--san` flag, you must list every name you want. The first argument becomes the Common Name, but only the SAN list counts.
+
+## 4. Read the short summary
+
+```sh title="terminal"
+step certificate inspect web.crt --short
+```
+
+```text title="Expected output"
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 1437...6918]
+  Subject:     web.example.com
+               localhost
+               127.0.0.1
+  Issuer:      pki.fun Lab Intermediate CA
+  Provisioner: admin@example.com [ID: x7bd...tw9U]
+  Valid from:  2026-11-12T12:03:09Z
+          to:  2026-11-13T12:04:09Z
+```
+
+Two details are worth a look:
+
+- **24 hours and one minute.** step-ca gives 24-hour certificates by default. It also starts them one minute early, so a client with a slow clock still accepts them.
+- **The issuer is the intermediate**, not the root. The root stays out of daily work.
+
+## 5. Read every field
+
+```sh title="terminal"
+step certificate inspect web.crt
+```
+
+```text title="Expected output (excerpt)"
+Certificate:
+    Data:
+        Version: 3 (0x2)
+        Serial Number: 14376028212618324809565784490913006918 (0x0ad0b8ea11913bc64f0ab56eb7cf8546)
+        Signature Algorithm: ECDSA-SHA256
+        Issuer: O=pki.fun Lab,CN=pki.fun Lab Intermediate CA
+        Validity
+            Not Before: Nov 12 12:03:09 2026 UTC
+            Not After : Nov 13 12:04:09 2026 UTC
+        Subject: CN=web.example.com
+        Subject Public Key Info:
+            Public Key Algorithm: ECDSA
+                Public-Key: (256 bit)
+                Curve: P-256
+        ...
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Digital Signature
+            X509v3 Extended Key Usage:
+                Server Authentication, Client Authentication
+            X509v3 Subject Key Identifier:
+                FE:63:23:2F:9F:6E:85:14:84:73:FE:37:A9:47:CE:96:37:B9:C2:9D
+            X509v3 Authority Key Identifier:
+                60:32:17:CE:F8:72:1C:F8:AC:12:B7:55:01:A9:CD:80:00:32:A3:E9
+            X509v3 Subject Alternative Name:
+                DNS:web.example.com, DNS:localhost
+                IP Address:127.0.0.1
+            X509v3 Step Provisioner:
+                Type: JWK
+                Name: admin@example.com
+                CredentialID: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U
+    Signature Algorithm: ECDSA-SHA256
+    ...
+```
+
+Here is what each part means:
+
+| Field | What it tells you |
+|---|---|
+| Serial Number | A unique number from this CA. Revocation lists use it. |
+| Signature Algorithm | How the CA signed this certificate. Here, ECDSA with SHA-256. |
+| Issuer | The CA that signed it. |
+| Validity | The window when clients accept it. Outside it, the certificate is dead. |
+| Subject | The Common Name. Kept for humans and old software. |
+| Subject Public Key Info | The public key this certificate vouches for. |
+| Key Usage | What the key may do. `Digital Signature` is what TLS needs. `critical` means software that doesn't understand it must reject the certificate. |
+| Extended Key Usage | The jobs it may do. **Server Authentication** for TLS servers, **Client Authentication** for mTLS clients. |
+| Subject / Authority Key Identifier | Hashes that link this certificate to its issuer. They help clients find the right intermediate fast. |
+| Subject Alternative Name | The names this certificate is valid for. This is the field clients check. |
+| Step Provisioner | A step-ca extension that records which provisioner issued it. Other software ignores it. |
+
+## 6. Look at the bundle
+
+Count the certificates in `web.crt`:
+
+```sh title="terminal"
+grep -c "BEGIN CERTIFICATE" web.crt
+```
+
+```text title="Expected output"
+2
+```
+
+step-ca returns the leaf **and** the intermediate. Show both:
+
+```sh title="terminal"
+step certificate inspect web.crt --bundle --short
+```
+
+```text title="Expected output"
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 1437...6918]
+  Subject:     web.example.com
+               localhost
+               127.0.0.1
+  Issuer:      pki.fun Lab Intermediate CA
+  Provisioner: admin@example.com [ID: x7bd...tw9U]
+  Valid from:  2026-11-12T12:03:09Z
+          to:  2026-11-13T12:04:09Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 4463...1990]
+  Subject:     pki.fun Lab Intermediate CA
+  Issuer:      pki.fun Lab Root CA
+  Valid from:  2026-11-12T12:03:57Z
+          to:  2036-11-09T12:03:57Z
+```
+
+Read it top to bottom. Each issuer is the subject of the next certificate. That is the chain.
+
+<Diagram kind="chain" />
+
+## 7. Cross-check with OpenSSL
+
+You'll meet OpenSSL everywhere, so learn to read its output too.
+
+```sh title="terminal"
+openssl x509 -in web.crt -noout -subject -issuer -dates -ext subjectAltName,extendedKeyUsage
+```
+
+```text title="Expected output"
+subject=CN = web.example.com
+issuer=O = pki.fun Lab, CN = pki.fun Lab Intermediate CA
+notBefore=Nov 12 12:03:09 2026 GMT
+notAfter=Nov 13 12:04:09 2026 GMT
+X509v3 Extended Key Usage: 
+    TLS Web Server Authentication, TLS Web Client Authentication
+X509v3 Subject Alternative Name: 
+    DNS:web.example.com, DNS:localhost, IP Address:127.0.0.1
+```
+
+:::note[OpenSSL reads only the first certificate]
+`openssl x509` stops after the first PEM block in a file. Use `step certificate inspect --bundle` when you need to see the whole chain.
+:::
+
+## 8. Issue a client certificate
+
+A client certificate names a person or device. Use an email address as the name:
+
+```sh title="terminal"
+step ca certificate alice@example.com alice.crt alice.key
+```
+
+```text title="Expected output"
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ CA: https://localhost:9000
+✔ Certificate: alice.crt
+✔ Private Key: alice.key
+```
+
+Check the name type:
+
+```sh title="terminal"
+openssl x509 -in alice.crt -noout -ext subjectAltName
+```
+
+```text title="Expected output"
+X509v3 Subject Alternative Name: 
+    email:alice@example.com
+```
+
+step saw the `@` and made an **email** SAN, not a DNS name. The default step-ca template puts both Server and Client Authentication in the EKU. In [module 5](/guides/eap-tls-freeradius/) you'll see why a stricter template is better.
+
+## 9. Check that a key matches its certificate
+
+A certificate and key that don't match cause confusing TLS errors. Compare the public keys:
+
+```sh title="terminal"
+step certificate key web.crt
+```
+
+```sh title="terminal"
+step crypto key public web.key
+```
+
+```text title="Expected output (both commands)"
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAElyU5muEfGz3nzbCVwz4D/NzQm4w9
+ku3fbMp9c+/aRJSpJu0lbIEUlHmjrvjAkGupqD4vyG58oIhuyhivxe1DHA==
+-----END PUBLIC KEY-----
+```
+
+Same output means they belong together.
+
+## 10. Verify the chain
+
+`step certificate verify` does what a TLS client does. It builds the chain to a root you trust, checks each signature and date, and checks the name.
+
+```sh title="terminal"
+step certificate verify web.crt \
+  --roots $(step path)/certs/root_ca.crt \
+  --host web.example.com
+```
+
+The command prints nothing. Check the exit code:
+
+```sh title="terminal"
+echo $?
+```
+
+```text title="Expected output"
+0
+```
+
+Zero means the certificate passed every check.
+
+## Break it
+
+Each failure below is one you'll meet in real life. Read the error first, then the fix.
+
+### Wrong name
+
+```sh title="terminal"
+step certificate verify web.crt \
+  --roots $(step path)/certs/root_ca.crt \
+  --host shop.example.com
+```
+
+```text title="Expected output"
+failed to verify certificate: x509: certificate is valid for web.example.com, localhost, not shop.example.com
+```
+
+The chain is fine. The name is not in the SAN list. **Fix:** issue a new certificate that lists the name.
+
+### Missing intermediate
+
+Make a copy that holds only the leaf:
+
+```sh title="terminal"
+awk '/BEGIN/{n++} n==1' web.crt > leaf-only.crt
+```
+
+Verify it:
+
+```sh title="terminal"
+step certificate verify leaf-only.crt \
+  --roots $(step path)/certs/root_ca.crt \
+  --host web.example.com
+```
+
+```text title="Expected output"
+failed to verify certificate: x509: certificate signed by unknown authority
+```
+
+The client can't connect the leaf to the root without the intermediate. This is one of the most common server misconfigurations. **Fix:** always serve the full bundle, leaf first.
+
+### Untrusted root
+
+Any root that didn't sign the chain fails the same way. If you made a second CA while you experimented, try its root:
+
+```sh title="terminal"
+step certificate verify web.crt \
+  --roots ~/other-ca/root_ca.crt \
+  --host web.example.com
+```
+
+```text title="Expected output"
+failed to verify certificate: x509: certificate signed by unknown authority (possibly because of "x509: ECDSA verification failure" while trying to verify candidate authority certificate "pki.fun Lab Root CA")
+```
+
+The names match, but the signature doesn't. A root with the same name is not the same root. Trust comes from the key, not the label.
+
+### Too long a lifetime
+
+Ask for a two-day certificate:
+
+```sh title="terminal"
+step ca certificate api.example.com api.crt api.key --not-after 48h
+```
+
+```text title="Expected output"
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ CA: https://localhost:9000
+The request was forbidden by the certificate authority: requested duration of 48h1m0s is more than the authorized maximum certificate duration of 24h1m0s.
+Re-run with STEPDEBUG=1 for more info.
+```
+
+The CA enforces policy, not the client. Shorter is allowed, so `--not-after 2h` works. The provisioner's `maxTLSCertDuration` setting raises the limit.
+
+## What you have now
+
+- A laptop-style config that trusts your CA through its fingerprint.
+- A server certificate for `web.example.com`, `localhost` and `127.0.0.1`.
+- A client certificate for `alice@example.com`.
+- A habit: read the SAN, the EKU and the issuer before you trust anything.
+
+## Go deeper
+
+- [RFC 5280, section 4.1](https://datatracker.ietf.org/doc/html/rfc5280#section-4.1) — every field of an X.509 certificate.
+- [RFC 2986](https://datatracker.ietf.org/doc/html/rfc2986) — the PKCS #10 format behind a CSR.
+- [`step ca certificate` reference](https://smallstep.com/docs/step-cli/reference/ca/certificate/)
+- [`step certificate verify` reference](https://smallstep.com/docs/step-cli/reference/certificate/verify/)
+- [step-ca certificate templates](https://smallstep.com/docs/step-ca/templates/) — control the fields the CA writes.

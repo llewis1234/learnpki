@@ -23,7 +23,7 @@
 
 ## Lab rules
 
-- Learners use the step CLI's default `$(step path)` directory. Lessons build on each other: module 4 uses the CA from module 2.
+- Learners keep the CA in the step CLI's default `$(step path)` directory and work in one folder per lesson under `~/pki-fun-lab`. Lessons build on each other: later modules use the CA from module 2.
 - Pin tool versions in `labs/versions.env` and state them in Lab Setup and lessons.
 - Use real passwords in lesson instructions. Any `--no-password`, `--password-file` or `--insecure` flags in scripts must have a nearby comment that says they are for CI only.
 - Verify every command and flag against the pinned tool or its official documentation. Never invent output; run commands to capture it.

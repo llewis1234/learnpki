@@ -15,9 +15,13 @@ cards:
     a: It is self-signed — nothing above it vouches for it.
   - q: What is a provisioner in step-ca?
     a: An identity or method allowed to request certificates from the CA, such as a password-protected admin.
+  - q: What does `pathlen:1` on the root mean?
+    a: At most one CA may sit below the root. The intermediate can issue leaves, but can't create more CAs.
 ---
 
 Reading about CAs only goes so far. In this lab you'll run your own, using `step-ca`, an open-source CA server, and the `step` command-line tool. Make sure you've followed [Lab Setup](/setup/) first.
+
+You don't need any special hardware. A laptop is enough. When you're ready to harden it, see [Where to go next](#where-to-go-next).
 
 ## Initialize the CA
 
@@ -25,24 +29,35 @@ Reading about CAs only goes so far. In this lab you'll run your own, using `step
 
 ```sh title="terminal"
 step ca init \
+  --deployment-type standalone \
   --name "pki.fun Lab" \
   --dns localhost \
   --address 127.0.0.1:9000 \
   --provisioner admin@example.com
 ```
 
+Here is what each flag does:
+
+| Flag | Meaning |
+|---|---|
+| `--deployment-type standalone` | You run and manage the CA yourself. Without it, step asks. |
+| `--name` | The name that appears in your CA certificates. |
+| `--dns` | The name clients use to reach the CA. It goes in the CA's own TLS certificate. |
+| `--address` | Where the CA listens. `127.0.0.1` keeps it private to this machine. |
+| `--provisioner` | The name of the first provisioner, a password-protected admin. |
+
 ```text title="Expected output"
 Generating root certificate... done!
 Generating intermediate certificate... done!
 
-✔ Root certificate: ~/.step/certs/root_ca.crt
-✔ Root private key: ~/.step/secrets/root_ca_key
-✔ Root fingerprint: 04b3beb2eac1f1ec1de352b7aa7fe1ebb27ea2dc67cc49597dc00a0a634162cb
-✔ Intermediate certificate: ~/.step/certs/intermediate_ca.crt
-✔ Intermediate private key: ~/.step/secrets/intermediate_ca_key
-✔ Database folder: ~/.step/db
-✔ Default configuration: ~/.step/config/defaults.json
-✔ Certificate Authority configuration: ~/.step/config/ca.json
+✔ Root certificate: /home/you/.step/certs/root_ca.crt
+✔ Root private key: /home/you/.step/secrets/root_ca_key
+✔ Root fingerprint: cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
+✔ Intermediate certificate: /home/you/.step/certs/intermediate_ca.crt
+✔ Intermediate private key: /home/you/.step/secrets/intermediate_ca_key
+✔ Database folder: /home/you/.step/db
+✔ Default configuration: /home/you/.step/config/defaults.json
+✔ Certificate Authority configuration: /home/you/.step/config/ca.json
 
 Your PKI is ready to go. To generate certificates for individual services see 'step help ca'.
 ```
@@ -53,6 +68,25 @@ Your fingerprint will be different. Every new root gets its own.
 The root fingerprint lets other machines bootstrap trust in your CA safely. You'll use it in the next module.
 :::
 
+:::caution[One password, two keys]
+In this lab, one password protects both CA keys and the first provisioner. That's fine for learning. In production, the root key lives offline with its own password, and the provisioner gets a separate one.
+:::
+
+## Look at what it made
+
+```sh title="terminal"
+ls $(step path)
+```
+
+```text title="Expected output"
+certs  config  db  secrets  templates
+```
+
+- `certs` holds the public root and intermediate certificates. Share these freely.
+- `secrets` holds the private keys. Never share these.
+- `config/ca.json` is the CA's configuration. You'll edit it in later modules.
+- `db` is the CA's database. It records issued and revoked certificates.
+
 ## Start the CA server
 
 Start step-ca with the config it just wrote. Enter your CA password when asked.
@@ -61,14 +95,12 @@ Start step-ca with the config it just wrote. Enter your CA password when asked.
 step-ca $(step path)/config/ca.json
 ```
 
-{/* UNVERIFIED: captured with step-ca 0.28.1 on macOS; the version line is edited to the pinned 0.30.2. Re-capture with the pinned release. */}
-
 ```text title="Expected output (excerpt)"
 Starting Smallstep CA/0.30.2 (linux/amd64)
-Config file: ~/.step/config/ca.json
+Config file: /home/you/.step/config/ca.json
 The primary server URL is https://localhost:9000
 Root certificates are available at https://localhost:9000/roots.pem
-X.509 Root Fingerprint: 04b3beb2eac1f1ec1de352b7aa7fe1ebb27ea2dc67cc49597dc00a0a634162cb
+X.509 Root Fingerprint: cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
 Serving HTTPS on 127.0.0.1:9000 ...
 ```
 
@@ -86,6 +118,8 @@ curl --cacert $(step path)/certs/root_ca.crt https://localhost:9000/health
 {"status":"ok"}
 ```
 
+`--cacert` tells curl to trust your new root for this one request. Your system doesn't trust it yet.
+
 ## Look inside your root
 
 ```sh title="terminal"
@@ -93,17 +127,87 @@ step certificate inspect $(step path)/certs/root_ca.crt --short
 ```
 
 ```text title="Expected output"
-X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 8362...6093]
+X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 2974...2760]
   Subject:     pki.fun Lab Root CA
   Issuer:      pki.fun Lab Root CA
-  Valid from:  2026-11-09T02:16:00Z
-          to:  2036-11-06T02:16:00Z
+  Valid from:  2026-11-12T12:03:56Z
+          to:  2036-11-09T12:03:56Z
 ```
 
-Notice the Subject and Issuer are the same — that's what makes it a self-signed root. Your serial number and dates will differ.
+Notice the Subject and Issuer are the same — that's what makes it a self-signed root. It's valid for 10 years. Your serial number and dates will differ.
+
+Now look at the extensions that make it a CA:
+
+```sh title="terminal"
+step certificate inspect $(step path)/certs/root_ca.crt
+```
+
+```text title="Expected output (excerpt)"
+        X509v3 extensions:
+            X509v3 Key Usage: critical
+                Certificate Sign, CRL Sign
+            X509v3 Basic Constraints: critical
+                CA:TRUE, pathlen:1
+```
+
+- **Key Usage** says this key may sign certificates and revocation lists. Nothing else.
+- **Basic Constraints `CA:TRUE`** marks it as a CA. Without it, clients refuse anything it signs.
+- **`pathlen:1`** allows one CA below it, your intermediate. The intermediate has `pathlen:0`, so it can sign leaves but not other CAs.
+
+## Break it
+
+### Forget to trust the root
+
+Run the health check without `--cacert`:
+
+```sh title="terminal"
+curl https://localhost:9000/health
+```
+
+```text title="Expected output (excerpt)"
+curl: (60) SSL certificate problem: unable to get local issuer certificate
+```
+
+curl checked the CA's TLS certificate against your system's trust store. Your private root isn't in it. [Module 3](/guides/issue-and-inspect/) shows how another machine gets your root safely.
+
+### Start the CA twice
+
+With the CA still running, start it again in another terminal:
+
+```sh title="terminal"
+step-ca $(step path)/config/ca.json
+```
+
+```text title="Expected output (excerpt)"
+Error opening database of Type badgerv2: error opening Badger database: Cannot acquire directory lock on "/home/you/.step/db".  Another process is using this Badger database.: resource temporarily unavailable
+```
+
+Only one step-ca can use the database at a time. If you see this and don't think a CA is running, look for a forgotten one with `pgrep -a step-ca`.
+
+### Use the wrong password
+
+Stop the CA with `Ctrl+C`. Start it again and type the wrong password:
+
+```text title="Expected output (excerpt)"
+error decrypting /home/you/.step/secrets/intermediate_ca_key: x509: decryption password incorrect
+```
+
+step-ca needs the intermediate key to sign anything, so it won't start without it. Start it again with the right password before you continue.
+
+## Where to go next
+
+Your CA keys are files on disk, protected by a password. That's the right place to learn. A production CA goes further:
+
+- **Keep the root offline.** Use it only to sign or replace intermediates.
+- **Put the intermediate key in hardware.** A TPM, YubiKey or HSM signs without ever exposing the key. step-ca supports these through its KMS options.
+- **Run it as a service** under its own user, started by systemd.
+
+Smallstep's [tiny CA with a Raspberry Pi and YubiKey](https://smallstep.com/blog/build-a-tiny-ca-with-raspberry-pi-yubikey/) walks through that hardened build end to end. Come back to the next module first. You'll get more out of it once you've issued, renewed and revoked a few certificates yourself.
 
 ## Go deeper
 
 - [step-ca documentation](https://smallstep.com/docs/step-ca/)
 - [`step ca init` reference](https://smallstep.com/docs/step-cli/reference/ca/init/)
+- [step-ca production considerations](https://smallstep.com/docs/step-ca/certificate-authority-server-production/)
+- [RFC 5280, section 4.2.1.9](https://datatracker.ietf.org/doc/html/rfc5280#section-4.2.1.9) — Basic Constraints and path length.
 - [step-ca source code](https://github.com/smallstep/certificates)

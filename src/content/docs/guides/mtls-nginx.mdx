@@ -15,6 +15,8 @@ cards:
     a: '`ssl_verify_client on;`'
   - q: What does nginx return when no client certificate is sent?
     a: 400 — No required SSL certificate was sent.
+  - q: Why does nginx only need the root in `ssl_client_certificate`?
+    a: The client sends its leaf and intermediate together. nginx builds the chain up to the root it trusts.
 ---
 
 import Diagram from '../../../components/Diagram.astro';
@@ -23,7 +25,11 @@ In normal TLS only the server shows a certificate. With **mutual TLS (mTLS)** th
 
 <Diagram kind="mtls" />
 
-You need the CA from [module 2](/guides/build-your-ca/) running before you start.
+You need the CA from [module 2](/guides/build-your-ca/) running before you start. Work in a new folder:
+
+```sh title="terminal"
+mkdir -p ~/pki-fun-lab/mtls && cd ~/pki-fun-lab/mtls
+```
 
 ## 1. Issue a server certificate
 
@@ -34,7 +40,7 @@ step ca certificate localhost server.crt server.key
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: UJJTomB6AaEpdfH578MY1o_S875zQEU3GG05pwaG11E]
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
 ✔ CA: https://localhost:9000
 ✔ Certificate: server.crt
 ✔ Private Key: server.key
@@ -47,11 +53,13 @@ step ca certificate alice client.crt client.key
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: UJJTomB6AaEpdfH578MY1o_S875zQEU3GG05pwaG11E]
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
 ✔ CA: https://localhost:9000
 ✔ Certificate: client.crt
 ✔ Private Key: client.key
 ```
+
+The default template gives every certificate both Server and Client Authentication, so this one works for mTLS as-is. [Module 5](/guides/eap-tls-freeradius/) shows how to make them stricter.
 
 ## 3. Copy the files for nginx
 
@@ -74,8 +82,6 @@ sudo cp server.crt server.key root_ca.crt /etc/pki-fun/
 ```
 
 ## 4. Configure nginx
-
-{/* UNVERIFIED: nginx config and the responses below have not been run against a live nginx yet. */}
 
 ```nginx title="/etc/nginx/conf.d/mtls.conf"
 server {
@@ -100,11 +106,24 @@ server {
 `step ca certificate` saves the leaf and the intermediate together in `client.crt`. Clients send both, so nginx only needs the root to complete the chain. `ssl_verify_depth 2` allows leaf → intermediate → root.
 :::
 
+Check the config:
+
+```sh title="terminal"
+sudo nginx -t
+```
+
+```text title="Expected output"
+nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+```
+
 Reload nginx to apply the config:
 
 ```sh title="terminal"
 sudo nginx -s reload
 ```
+
+On macOS with Homebrew, the config folder is `$(brew --prefix)/etc/nginx/servers/` and you don't need `sudo`.
 
 ## 5. Test it
 
@@ -131,8 +150,55 @@ curl --cacert root_ca.crt \
 Hello, CN=alice
 ```
 
+`$ssl_client_s_dn` is the client certificate's subject. A real app uses it, or the SAN, to decide what this client may do.
+
+## Break it
+
+### A client certificate with no intermediate
+
+Make a copy of the client certificate with only the leaf:
+
+```sh title="terminal"
+awk '/BEGIN/{n++} n==1' client.crt > client-leaf.crt
+```
+
+```sh title="terminal"
+curl --cacert root_ca.crt \
+  --cert client-leaf.crt --key client.key \
+  https://localhost:8443
+```
+
+```text title="Expected output (excerpt)"
+<html>
+<head><title>400 The SSL certificate error</title></head>
+```
+
+nginx has only the root. Without the intermediate, it can't build the chain. This proves the tip above: the client must send the bundle.
+
+### A client certificate from another CA
+
+Any certificate from a CA that nginx doesn't trust gets the same answer. If you made a second test CA, try a client certificate from it:
+
+```text title="Expected output (excerpt)"
+<html>
+<head><title>400 The SSL certificate error</title></head>
+```
+
+To see the exact reason, raise the log level. Add `error_log /var/log/nginx/error.log info;` inside the `server` block and reload. Repeat both tests, then read the log:
+
+```sh title="terminal"
+sudo grep "client SSL certificate verify" /var/log/nginx/error.log
+```
+
+```text title="Expected output (excerpt)"
+[info] 4832#4832: *1 client SSL certificate verify error: (21:unable to verify the first certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
+[info] 4831#4831: *2 client SSL certificate verify error: (20:unable to get local issuer certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
+```
+
+The numbers are OpenSSL error codes. [Module 6](/guides/operations/) has a table of the common ones.
+
 :::caution[Short certificates expire fast]
-step-ca issues 24-hour certificates by default. If tests suddenly fail tomorrow, renew with `step ca renew client.crt client.key`.
+step-ca issues 24-hour certificates by default. If tests suddenly fail tomorrow, renew with `step ca renew client.crt client.key`. [Module 6](/guides/operations/) automates this.
 :::
 
 ## Go deeper

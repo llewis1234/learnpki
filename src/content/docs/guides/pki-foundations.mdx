@@ -17,19 +17,140 @@ cards:
     a: A CRL is a published list of revoked certificates; OCSP is a live query asking about one certificate.
   - q: Which field lists the names a certificate is valid for?
     a: The Subject Alternative Name (SAN) extension.
+  - q: What does a signature actually sign?
+    a: A hash of the data. Change one character and the hash, and so the signature check, changes completely.
 ---
 
 import Diagram from '../../../components/Diagram.astro';
 
 Public Key Infrastructure (PKI) is the set of people, policies and software that lets two strangers on a network decide whether to trust each other. Every padlock in your browser, every signed software update and every enterprise Wi-Fi login leans on it.
 
+## Hashes
+
+A **hash function** turns any amount of data into a short, fixed-size fingerprint. SHA-256 always gives 256 bits, written as 64 hex characters. Two things make it useful:
+
+- The same input always gives the same hash.
+- You can't work backwards from a hash, and you can't find two inputs with the same hash.
+
+Change one character and the hash changes completely. Signatures and certificate fingerprints are built on this.
+
 ## Key pairs
 
 It starts with a **key pair**: a private key you keep secret and a public key you can hand to anyone. Data signed with the private key can be verified with the public key. Nobody can forge that signature without the private key.
 
+Strictly, you don't sign the data. You sign its hash. That's why signing a 4 GB file is as fast as signing a tweet.
+
+The three key types you'll meet:
+
+| Type | Notes |
+|---|---|
+| RSA | The oldest and most widely supported. Keys are large: 2048 bits or more. |
+| ECDSA (P-256) | Elliptic-curve keys. Much smaller and faster for the same strength. step uses it by default. |
+| Ed25519 | A newer elliptic-curve scheme. Common in SSH. X.509 support is still uneven. |
+
 :::caution[Guard the private key]
 Whoever holds a private key can impersonate its owner. Never email it, commit it to git, or paste it into a chat.
 :::
+
+## Try it: sign and verify
+
+You need the step CLI and OpenSSL from [Lab Setup](/setup/). Make a folder:
+
+```sh title="terminal"
+mkdir -p ~/pki-fun-lab/foundations && cd ~/pki-fun-lab/foundations
+```
+
+Write a message and hash it:
+
+```sh title="terminal"
+echo "Meet at the usual place at 9." > message.txt
+```
+
+```sh title="terminal"
+shasum -a 256 message.txt
+```
+
+```text title="Expected output"
+7b9f06f5a39eae74b95b06181dbfbf9f1210fb3f756a45c38c54bc5af9bee9bb  message.txt
+```
+
+Your hash is the same as this one, because your input is the same.
+
+Make a key pair. Choose a password to protect the private key:
+
+```sh title="terminal"
+step crypto keypair alice.pub alice.key
+```
+
+```text title="Expected output"
+Your public key has been saved in alice.pub.
+Your private key has been saved in alice.key.
+```
+
+Look at the public key. It's safe to share:
+
+```sh title="terminal"
+cat alice.pub
+```
+
+```text title="Expected output"
+-----BEGIN PUBLIC KEY-----
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfNJAO7q8L0Gn9Pv87tU62DN8pDu+
+vtHs7ppwqz9SkpPPlpH2AqyZqSS11Yf/6Oxg36joeIlafEXV4xDfcYwXsw==
+-----END PUBLIC KEY-----
+```
+
+Yours is different. This text format is **PEM**: base64 data between `BEGIN` and `END` lines.
+
+Sign the message with the private key. Enter the key password when OpenSSL asks:
+
+```sh title="terminal"
+openssl dgst -sha256 -sign alice.key -out message.sig message.txt
+```
+
+Verify it with the public key:
+
+```sh title="terminal"
+openssl dgst -sha256 -verify alice.pub -signature message.sig message.txt
+```
+
+```text title="Expected output"
+Verified OK
+```
+
+Anyone with `alice.pub` can run that check. Only the holder of `alice.key` could have made the signature.
+
+:::note[Why OpenSSL here?]
+step signs certificates and tokens, not loose files. OpenSSL's `dgst` command signs any file, so it's the clearest way to see a raw signature.
+:::
+
+### Break it: change one character
+
+Change the 9 to an 8:
+
+```sh title="terminal"
+echo "Meet at the usual place at 8." > message.txt
+```
+
+```sh title="terminal"
+shasum -a 256 message.txt
+```
+
+```text title="Expected output"
+be19a7ebd3b7dae617543e334c5f81d2050d6cad85ea117a167f1e9fd7992855  message.txt
+```
+
+One character changed, and the whole hash changed. Verify the old signature against the new message:
+
+```sh title="terminal"
+openssl dgst -sha256 -verify alice.pub -signature message.sig message.txt
+```
+
+```text title="Expected output"
+Verification failure
+```
+
+The signature still belongs to Alice. It just doesn't match this message any more. That's how a browser knows a certificate hasn't been edited since the CA signed it.
 
 ## Certificates
 
@@ -47,6 +168,8 @@ A **Certificate Authority (CA)** signs certificates. Usually a long-lived root C
 
 <Diagram kind="chain" />
 
+Where do roots come from? Your operating system and browser ship with a **trust store** of more than 100 public roots. A private PKI, like the one you'll build, adds its own root to the machines that should trust it, and to nothing else.
+
 ## When trust ends: expiry and revocation
 
 Certificates expire on purpose — short lifetimes limit the damage of a stolen key. When a key is compromised before then, the CA can **revoke** the certificate. It publishes that through a **CRL** (a list) or **OCSP** (a live lookup).
@@ -59,3 +182,5 @@ Many teams now prefer short-lived certificates (hours or days) with automatic re
 
 - [RFC 5280](https://datatracker.ietf.org/doc/html/rfc5280) — the X.509 certificate and CRL profile.
 - [RFC 6960](https://datatracker.ietf.org/doc/html/rfc6960) — OCSP.
+- [FIPS 180-4](https://csrc.nist.gov/pubs/fips/180-4/upd1/final) — the SHA-2 hash family.
+- [RFC 6090](https://datatracker.ietf.org/doc/html/rfc6090) — fundamental elliptic-curve cryptography.

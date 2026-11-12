@@ -1,6 +1,6 @@
 ---
 title: Lab Setup
-description: Install step CLI, step-ca, OpenSSL, nginx and FreeRADIUS on Linux, macOS or Windows (WSL).
+description: Install step CLI, step-ca, OpenSSL, nginx, FreeRADIUS, certbot and OpenSSH on Linux, macOS or Windows (WSL).
 ---
 
 import { Tabs, TabItem, CardGrid, Card } from '@astrojs/starlight/components';
@@ -14,11 +14,15 @@ Everything runs locally and is free. Plan on about 15 minutes.
 	<Card title="step-ca">Your own private certificate authority.</Card>
 	<Card title="OpenSSL">The classic toolkit, for cross-checking.</Card>
 	<Card title="nginx">Web server for the mTLS lab.</Card>
-	<Card title="FreeRADIUS">RADIUS server for the EAP-TLS lab.</Card>
+	<Card title="FreeRADIUS + eapol_test">RADIUS server and test client for the EAP-TLS lab.</Card>
+	<Card title="certbot">ACME client for the ACME lab.</Card>
+	<Card title="OpenSSH server">For the SSH certificates lab.</Card>
 	<Card title="curl">Test clients from the terminal.</Card>
 </CardGrid>
 
 The lessons are written against **step CLI 0.31.0** and **step-ca 0.30.2**. Newer versions should work, but output may differ slightly.
+
+The labs were tested on Ubuntu 24.04 with OpenSSL 3.0.13, nginx 1.24.0, FreeRADIUS 3.2.5, eapol_test 2.10, OpenSSH 9.6 and certbot 5.10.
 
 ## Install
 
@@ -41,10 +45,8 @@ sudo dpkg -i step-ca_0.30.2-1_amd64.deb
 
 Install the remaining tools from your distribution:
 
-{/* UNVERIFIED: package names not tested on a clean Debian/Ubuntu machine. */}
-
 ```sh title="terminal"
-sudo apt install -y openssl nginx freeradius curl
+sudo apt install -y openssl nginx freeradius eapoltest certbot openssh-server curl
 ```
 
 On ARM machines, swap `amd64` for `arm64` in both file names.
@@ -52,13 +54,17 @@ On ARM machines, swap `amd64` for `arm64` in both file names.
 </TabItem>
 <TabItem label="macOS">
 
-Install everything with [Homebrew](https://brew.sh). The `step` formula includes both `step` and `step-ca`:
+Install the tools with [Homebrew](https://brew.sh). The `step` formula includes both `step` and `step-ca`:
+
+{/* UNVERIFIED: Homebrew formula names not tested on a clean Mac. */}
 
 ```sh title="terminal"
-brew install step openssl nginx freeradius-server
+brew install step openssl nginx certbot
 ```
 
 Homebrew installs the latest release, which may be newer than the versions above.
+
+The EAP-TLS and SSH labs need a Linux server. Run them in an Ubuntu virtual machine or container. Everything else works on macOS.
 
 </TabItem>
 <TabItem label="Windows (WSL)">
@@ -80,13 +86,31 @@ Then open Ubuntu and follow the Linux steps.
 step version
 ```
 
-{/* UNVERIFIED: output captured with step 0.28.2; the pinned 0.31.0 should print the same shape. */}
-
 ```text title="Expected output"
 Smallstep CLI/0.31.0 (linux/amd64)
+Release Date: 2026-09-25T19:53:51Z
 ```
 
 The platform in brackets matches your machine, for example `darwin/arm64` on an Apple silicon Mac.
+
+```sh title="terminal"
+step-ca version
+```
+
+```text title="Expected output"
+Smallstep CA/0.30.2 (linux/amd64)
+Release Date: 2026-03-23T00:18:00Z
+```
+
+## Make a lab folder
+
+Every lesson works in its own folder under `~/pki-fun-lab`:
+
+```sh title="terminal"
+mkdir -p ~/pki-fun-lab
+```
+
+step keeps your CA in `~/.step`. Run `step path` to see where. To start over at any time, stop step-ca and delete both folders.
 
 :::note[Prefer containers?]
 You can run step-ca with Docker instead, using the official [smallstep/step-ca image](https://hub.docker.com/r/smallstep/step-ca). Commands in the lessons work the same once your CLI points at it.

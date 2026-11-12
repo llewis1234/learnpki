@@ -1,6 +1,6 @@
 ---
 interface Props {
-	kind: 'chain' | 'mtls' | 'eaptls';
+	kind: 'chain' | 'mtls' | 'eaptls' | 'acme' | 'ssh';
 }
 const { kind } = Astro.props;
 
@@ -10,6 +10,8 @@ const alt = {
 	mtls: 'mTLS handshake: the client sends ClientHello, the server returns its certificate and a certificate request, the client sends its certificate and proof of its key, and both sides verify each other against the CA.',
 	eaptls:
 		'EAP-TLS roles: the supplicant (a laptop or device) talks EAPOL to the authenticator (a switch or Wi-Fi access point), which relays to the RADIUS server (FreeRADIUS). Certificates are exchanged end to end inside EAP.',
+	acme: 'ACME flow: the client registers an account, places an order for a name, receives challenges, the CA validates the challenge from outside, the client finalizes with a CSR, then downloads the certificate and chain.',
+	ssh: 'SSH certificates: one SSH CA signs user keys and host keys. The laptop trusts the host CA, the server trusts the user CA, so neither side needs per-key lists.',
 }[kind];
 
 type Box = { x: number; y: number; w: number; h: number; title: string; sub?: string; accent?: boolean };
@@ -54,6 +56,34 @@ const layouts: Record<Props['kind'], { h: number; boxes: Box[]; arrows: Arrow[];
 			{ x1: 375, y1: 75, x2: 438, y2: 75, label: 'RADIUS' },
 		],
 		caption: { y: 135, text: 'Certificates exchanged end-to-end inside EAP' },
+	},
+	acme: {
+		h: 300,
+		boxes: [
+			{ x: 10, y: 10, w: 140, h: 280, title: 'ACME client', sub: 'certbot' },
+			{ x: 450, y: 10, w: 140, h: 280, title: 'ACME server', sub: 'step-ca', accent: true },
+		],
+		arrows: [
+			{ x1: 150, y1: 45, x2: 448, y2: 45, label: '1. New account (signed with account key)' },
+			{ x1: 150, y1: 85, x2: 448, y2: 85, label: '2. New order for localhost' },
+			{ x1: 450, y1: 125, x2: 152, y2: 125, label: '3. Authorization + challenges' },
+			{ x1: 450, y1: 165, x2: 152, y2: 165, label: '4. CA fetches /.well-known/acme-challenge/…' },
+			{ x1: 150, y1: 205, x2: 448, y2: 205, label: '5. Finalize with a CSR' },
+			{ x1: 450, y1: 245, x2: 152, y2: 245, label: '6. Download certificate + chain' },
+		],
+	},
+	ssh: {
+		h: 150,
+		boxes: [
+			{ x: 10, y: 45, w: 150, h: 60, title: 'Laptop', sub: 'user certificate' },
+			{ x: 225, y: 45, w: 150, h: 60, title: 'SSH CA', sub: 'user key + host key', accent: true },
+			{ x: 440, y: 45, w: 150, h: 60, title: 'Server', sub: 'host certificate' },
+		],
+		arrows: [
+			{ x1: 225, y1: 75, x2: 162, y2: 75, label: 'signs' },
+			{ x1: 375, y1: 75, x2: 438, y2: 75, label: 'signs' },
+		],
+		caption: { y: 135, text: 'Laptop trusts the host CA. Server trusts the user CA.' },
 	},
 };
 

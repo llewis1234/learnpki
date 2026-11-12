@@ -1,0 +1,351 @@
+---
+title: SSH certificates
+description: Replace scattered authorized_keys files and host-key warnings with short-lived SSH certificates.
+summary: Replace scattered authorized_keys files and host-key warnings with short-lived SSH certificates.
+module: 8
+topic: SSH
+level: Intermediate
+minutes: 35
+sidebar:
+  label: 8. SSH certificates
+cards:
+  - q: Are SSH certificates X.509 certificates?
+    a: No. OpenSSH uses its own simpler certificate format, signed by an SSH CA key.
+  - q: What does a user certificate replace on the server?
+    a: Per-user entries in `authorized_keys`. The server trusts the CA instead.
+  - q: What does a host certificate fix for clients?
+    a: The "unknown host key" prompt. Clients trust hosts signed by the CA.
+  - q: What decides which accounts a user certificate can log in to?
+    a: Its principals. The server only accepts a login name that is listed.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+
+OpenSSH has its own certificate format. Instead of copying public keys into every server's `authorized_keys`, servers trust one SSH CA. Users and hosts get short-lived certificates signed by it.
+
+## The problem with plain SSH keys
+
+Plain SSH keys trust individual keys, one at a time:
+
+- **Every server** keeps an `authorized_keys` list. When someone leaves, you must find and remove their key everywhere.
+- **Every client** keeps a `known_hosts` list. The first connection asks "Are you sure you want to continue connecting?" Almost everyone types `yes` without checking. That's trust on first use, and it's how a man-in-the-middle gets in.
+
+SSH certificates replace both lists with two CA keys:
+
+<Diagram kind="ssh" />
+
+- The **user CA** signs user keys. Servers trust it with one line: `TrustedUserCAKeys`.
+- The **host CA** signs server keys. Clients trust it with one line in `known_hosts`: `@cert-authority`.
+
+An SSH certificate is not X.509. It's a public key plus a few fields, signed by the CA key: a key ID, a serial, **principals** (allowed login names or host names), a validity window and a few options.
+
+:::note[This lab needs a Linux SSH server]
+You'll run a second copy of `sshd` on port 2222, so your normal SSH server isn't touched. Use Linux or WSL with `openssh-server` installed. The client side works on macOS too.
+:::
+
+## 1. Give your CA SSH keys
+
+`step ca init --ssh` creates SSH CA keys at setup. Your CA already exists, so add them by hand.
+
+Create the host CA key pair. Use your CA password when asked:
+
+```sh title="terminal"
+step crypto keypair $(step path)/certs/ssh_host_ca_key.pub $(step path)/secrets/ssh_host_ca_key
+```
+
+```text title="Expected output"
+Your public key has been saved in /home/you/.step/certs/ssh_host_ca_key.pub.
+Your private key has been saved in /home/you/.step/secrets/ssh_host_ca_key.
+```
+
+Create the user CA key pair the same way:
+
+```sh title="terminal"
+step crypto keypair $(step path)/certs/ssh_user_ca_key.pub $(step path)/secrets/ssh_user_ca_key
+```
+
+:::tip[Use the same password]
+step-ca can unlock all its keys with one password at startup. Use your CA password for both SSH keys.
+:::
+
+Open `$(step path)/config/ca.json`. Add this block at the top level, next to `"db"`. Replace `/home/you` with your home folder:
+
+```json title="ca.json (excerpt)"
+"ssh": {
+	"hostKey": "/home/you/.step/secrets/ssh_host_ca_key",
+	"userKey": "/home/you/.step/secrets/ssh_user_ca_key"
+},
+```
+
+Allow your admin provisioner to sign SSH certificates:
+
+```sh title="terminal"
+step ca provisioner update admin@example.com --ssh
+```
+
+```text title="Expected output"
+✔ CA Configuration: /home/you/.step/config/ca.json
+
+Success! Your `step-ca` config has been updated. To pick up the new configuration SIGHUP (kill -1 <pid>) or restart the step-ca process.
+```
+
+Restart step-ca so it loads the new keys. Then ask it for its SSH CA keys:
+
+```sh title="terminal"
+step ssh config --roots
+```
+
+```text title="Expected output"
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCWAbQFTB4Gj3DTgzm3RWN/srdceomwByUTEHncSPi+9PRdRzbER2L5hQ4c8jvEhUzdE7CJJF2ykKKIlQx1AadA=
+```
+
+That's the **user** CA public key. `step ssh config --host --roots` prints the host CA key.
+
+## 2. Give the server a host certificate
+
+On the server, sign its existing ECDSA host key. The certificate lists the names clients will use:
+
+```sh title="terminal"
+sudo step ssh certificate --host --sign \
+  --principal localhost --principal host.example.com \
+  host.example.com /etc/ssh/ssh_host_ecdsa_key.pub \
+  --ca-url https://localhost:9000 --root $(step path)/certs/root_ca.crt \
+  --provisioner admin@example.com
+```
+
+`--sign` means "sign this existing public key", so no new key is made. `--ca-url` and `--root` matter because `sudo` runs as root, which has no step config of its own.
+
+```text title="Expected output"
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ CA: https://localhost:9000
+✔ Certificate: /etc/ssh/ssh_host_ecdsa_key-cert.pub
+```
+
+Read it with OpenSSH's own tool:
+
+```sh title="terminal"
+ssh-keygen -L -f /etc/ssh/ssh_host_ecdsa_key-cert.pub
+```
+
+```text title="Expected output"
+/etc/ssh/ssh_host_ecdsa_key-cert.pub:
+        Type: ecdsa-sha2-nistp256-cert-v01@openssh.com host certificate
+        Public key: ECDSA-CERT SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic
+        Signing CA: ECDSA SHA256:Ac/aovljhIEACbjpZg2FDwSuczABBm9DbMSgyXxI2Oo (using ecdsa-sha2-nistp256)
+        Key ID: "host.example.com"
+        Serial: 1958076320432791810
+        Valid: from 2026-11-12T12:08:44 to 2026-12-12T12:09:44
+        Principals: 
+                localhost
+                host.example.com
+        Critical Options: (none)
+        Extensions: (none)
+```
+
+Host certificates default to 30 days. Run the same command again before it expires. For hands-off renewal, step-ca's SSHPOP provisioner lets a host renew with `step ssh renew`, using its current certificate as proof.
+
+## 3. Configure sshd to use both
+
+Save the user CA key where sshd can read it:
+
+```sh title="terminal"
+step ssh config --roots | sudo tee /etc/ssh/ssh_user_ca.pub
+```
+
+Create a config file for the lab:
+
+```text title="/etc/ssh/sshd_config.d/pki-fun.conf"
+TrustedUserCAKeys /etc/ssh/ssh_user_ca.pub
+HostCertificate /etc/ssh/ssh_host_ecdsa_key-cert.pub
+```
+
+- `TrustedUserCAKeys` accepts any user certificate signed by this CA.
+- `HostCertificate` makes sshd present its certificate to clients.
+
+Test the config:
+
+```sh title="terminal"
+sudo sshd -t && echo "sshd config OK"
+```
+
+```text title="Expected output"
+sshd config OK
+```
+
+Start a second sshd on port 2222:
+
+```sh title="terminal"
+sudo /usr/sbin/sshd -p 2222
+```
+
+Create a local account for Alice to log in to:
+
+```sh title="terminal"
+sudo useradd -m -s /bin/bash alice
+```
+
+Alice has no password and no `authorized_keys`. The certificate is the only way in.
+
+## 4. Get a user certificate
+
+On the client, ask for a certificate for Alice:
+
+```sh title="terminal"
+step ssh certificate alice@example.com ~/.ssh/id_ecdsa
+```
+
+Choose a password for the new private key, then enter the provisioner password.
+
+```text title="Expected output"
+✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ CA: https://localhost:9000
+✔ Private Key: /home/you/.ssh/id_ecdsa
+✔ Public Key: /home/you/.ssh/id_ecdsa.pub
+✔ Certificate: /home/you/.ssh/id_ecdsa-cert.pub
+✔ SSH Agent: yes
+```
+
+If no `ssh-agent` is running, the last line shows an error instead. That's harmless. The files are on disk.
+
+The private key is protected by the passphrase you chose. Keep it that way. The certificate is public, but the key is not.
+
+```sh title="terminal"
+ssh-keygen -L -f ~/.ssh/id_ecdsa-cert.pub
+```
+
+```text title="Expected output"
+/home/you/.ssh/id_ecdsa-cert.pub:
+        Type: ecdsa-sha2-nistp256-cert-v01@openssh.com user certificate
+        Public key: ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
+        Signing CA: ECDSA SHA256:gey2nyVNeqqzb4WG9jHVdz6Zb4TZsXXO4fRmy1M1dQE (using ecdsa-sha2-nistp256)
+        Key ID: "alice@example.com"
+        Serial: 696438274679778010
+        Valid: from 2026-11-12T12:08:44 to 2026-11-13T04:09:44
+        Principals: 
+                alice
+                alice@example.com
+        Critical Options: (none)
+        Extensions: 
+                permit-X11-forwarding
+                permit-agent-forwarding
+                permit-port-forwarding
+                permit-pty
+                permit-user-rc
+```
+
+Three things to notice:
+
+- **Principals** are `alice` and `alice@example.com`. step derived them from the email. The server lets this certificate log in only as a listed principal.
+- **Valid** for 16 hours, the default for user certificates. Tomorrow, Alice gets a new one. Nobody cleans up old keys.
+- **Signing CA** is the user CA, not your X.509 intermediate. SSH and X.509 trust are separate.
+
+## 5. Trust the host CA on the client
+
+Add one line to `~/.ssh/known_hosts`. It says: "for these host names, trust any host certificate from this CA."
+
+```sh title="terminal"
+echo "@cert-authority [localhost]:2222,*.example.com $(step ssh config --host --roots)" >> ~/.ssh/known_hosts
+```
+
+`[localhost]:2222` is how OpenSSH writes a host on a non-standard port. `*.example.com` covers every server you'll add later.
+
+## 6. Log in
+
+```sh title="terminal"
+ssh -p 2222 alice@localhost whoami
+```
+
+ssh asks for your key's passphrase. That unlocks the key on your laptop. It is not a server password.
+
+```text title="Expected output"
+Enter passphrase for key '/home/you/.ssh/id_ecdsa':
+alice
+```
+
+No account password. No "Are you sure you want to continue connecting?" Both sides proved themselves with certificates.
+
+Add `-v` to see it happen:
+
+```text title="Expected output (excerpt)"
+debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic, serial 1958076320432791810 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:Ac/aovljhIEACbjpZg2FDwSuczABBm9DbMSgyXxI2Oo valid from 2026-11-12T12:08:44 to 2026-12-12T12:09:44
+debug1: Host '[localhost]:2222' is known and matches the ECDSA-CERT host certificate.
+debug1: Found CA key in /home/you/.ssh/known_hosts:1
+...
+debug1: Offering public key: /home/you/.ssh/id_ecdsa ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
+debug1: Server accepts key: /home/you/.ssh/id_ecdsa ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
+```
+
+The first two lines are the host check. The last two are the user check.
+
+## Break it
+
+### Log in as someone else
+
+Create a second account:
+
+```sh title="terminal"
+sudo useradd -m bob
+```
+
+Try to log in as Bob with Alice's certificate:
+
+```sh title="terminal"
+ssh -p 2222 bob@localhost whoami
+```
+
+```text title="Expected output"
+bob@localhost: Permission denied (publickey,password).
+```
+
+The signature is valid, but `bob` isn't a principal in the certificate. Principals are how SSH certificates do authorization.
+
+### Connect by a name nobody vouched for
+
+Connect by IP address with strict checking on:
+
+```sh title="terminal"
+ssh -p 2222 -o StrictHostKeyChecking=yes alice@127.0.0.1 whoami
+```
+
+```text title="Expected output"
+No ECDSA host key is known for [127.0.0.1]:2222 and you have requested strict checking.
+Host key verification failed.
+```
+
+Your `@cert-authority` line covers `[localhost]:2222` and `*.example.com`, and the host certificate lists `localhost` and `host.example.com`. Neither covers `127.0.0.1`, so the client falls back to plain host keys. Without `StrictHostKeyChecking`, you'd get the old "Are you sure?" prompt. In a certificate setup, that prompt means something is wrong.
+
+If the CA line did cover the address, OpenSSH would still refuse, with `Certificate invalid: name is not a listed principal`. Both the client's pattern and the certificate's principals must match.
+
+### No host CA trust at all
+
+Remove the `@cert-authority` line from `~/.ssh/known_hosts`. Then connect with strict checking:
+
+```sh title="terminal"
+ssh -p 2222 -o StrictHostKeyChecking=yes alice@localhost whoami
+```
+
+```text title="Expected output"
+No ECDSA host key is known for [localhost]:2222 and you have requested strict checking.
+Host key verification failed.
+```
+
+The host certificate only helps clients that trust the host CA. Put the line back to continue.
+
+## Clean up
+
+Stop the lab sshd and remove its config:
+
+```sh title="terminal"
+sudo pkill -f "sshd -p 2222"
+```
+
+```sh title="terminal"
+sudo rm /etc/ssh/sshd_config.d/pki-fun.conf
+```
+
+## Go deeper
+
+- [`ssh-keygen` manual, CERTIFICATES section](https://man.openbsd.org/ssh-keygen#CERTIFICATES)
+- [`sshd_config` manual](https://man.openbsd.org/sshd_config) — `TrustedUserCAKeys`, `HostCertificate` and `AuthorizedPrincipalsFile`.
+- [step-ca SSH documentation](https://smallstep.com/docs/step-ca/)
+- [Run an SSH CA with step-ca](https://smallstep.com/docs/tutorials/ssh-certificate-login/)

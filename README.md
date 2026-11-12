@@ -32,7 +32,7 @@ The build also checks internal Markdown and MDX links.
 
 ## Project status
 
-Modules 1, 2 and 4 have full lessons. Modules 3, 5, 6, 7 and 8 are outlines. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
+All eight modules have full lessons with hands-on labs. The labs were tested on Ubuntu 24.04 with the versions in `labs/versions.env`. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
 
 ## Licenses
 

@@ -1,0 +1,279 @@
+---
+title: 'ACME: automate certificate issuance'
+description: Let machines request and renew their own certificates with the ACME protocol and step-ca.
+summary: Let machines request and renew their own certificates with the ACME protocol and step-ca.
+module: 7
+topic: ACME
+level: Intermediate
+minutes: 40
+sidebar:
+  label: '7. ACME automation'
+cards:
+  - q: What does ACME automate?
+    a: Proving control of a name, getting a certificate for it, and renewing it — with no human in the loop.
+  - q: How does the HTTP-01 challenge prove control?
+    a: The client serves a token at a well-known URL on port 80, and the CA fetches it.
+  - q: When would you pick DNS-01 over HTTP-01?
+    a: For wildcard certificates, or hosts the CA can't reach over HTTP.
+  - q: What signs every ACME request?
+    a: The client's account key. The CA never sees a password.
+---
+
+import Diagram from '../../../components/Diagram.astro';
+
+**ACME** (Automated Certificate Management Environment) is the protocol behind Let's Encrypt. A client proves it controls a name, and the CA issues a certificate automatically. step-ca can act as your own private ACME server.
+
+In earlier modules you typed a provisioner password for every certificate. That doesn't scale to hundreds of servers. With ACME, the proof is "I control this name", and the client does all the work.
+
+## How ACME works
+
+ACME is defined in [RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555). It's a short conversation over HTTPS:
+
+<Diagram kind="acme" />
+
+1. **Account.** The client makes an **account key pair** and registers it. Every later request is signed with that key, so the CA knows it's the same client.
+2. **Order.** The client asks for a certificate for one or more names.
+3. **Authorization and challenges.** For each name, the CA offers ways to prove control. The client picks one.
+4. **Validation.** The CA checks the proof from the outside.
+5. **Finalize.** The client sends a CSR with a fresh key. The CA signs it.
+6. **Download.** The client fetches the certificate and chain.
+
+### The challenge types
+
+| Challenge | How the CA checks | Good for |
+|---|---|---|
+| `http-01` | Fetches `http://<name>/.well-known/acme-challenge/<token>` on port 80. | Web servers the CA can reach. |
+| `dns-01` | Looks up a TXT record at `_acme-challenge.<name>`. | Wildcards, and hosts with no open port. |
+| `tls-alpn-01` | Connects to port 443 and checks a special certificate. | Servers that only expose 443. |
+
+The token alone isn't enough. The client must answer with a **key authorization**: the token joined to a hash of its account key. Someone who sees the token can't answer for you.
+
+## 1. Add an ACME provisioner
+
+ACME clients don't have provisioner passwords, so step-ca needs a provisioner of type ACME:
+
+```sh title="terminal"
+step ca provisioner add acme --type ACME
+```
+
+```text title="Expected output"
+✔ CA Configuration: /home/you/.step/config/ca.json
+
+Success! Your `step-ca` config has been updated. To pick up the new configuration SIGHUP (kill -1 <pid>) or restart the step-ca process.
+```
+
+Reload the CA:
+
+```sh title="terminal"
+pkill -HUP -x step-ca
+```
+
+:::note[You now have more than one provisioner]
+From now on, `step ca certificate` asks which provisioner to use. Pick `admin@example.com (JWK)`, or add `--provisioner admin@example.com` to skip the question.
+:::
+
+## 2. Look at the directory
+
+Every ACME server publishes a **directory**. It's how a client finds everything else. The URL has the form `/acme/<provisioner-name>/directory`:
+
+```sh title="terminal"
+curl -s --cacert $(step path)/certs/root_ca.crt \
+  https://localhost:9000/acme/acme/directory
+```
+
+```text title="Expected output"
+{"newNonce":"https://localhost:9000/acme/acme/new-nonce","newAccount":"https://localhost:9000/acme/acme/new-account","newOrder":"https://localhost:9000/acme/acme/new-order","revokeCert":"https://localhost:9000/acme/acme/revoke-cert","keyChange":"https://localhost:9000/acme/acme/key-change"}
+```
+
+That's the whole API surface. Notice there's no "log in" endpoint. Trust comes from signatures, not sessions.
+
+## 3. Get a certificate with certbot
+
+certbot is the EFF's ACME client. It works with any ACME server, not just Let's Encrypt.
+
+Install it:
+
+```sh title="terminal"
+sudo apt install -y certbot
+```
+
+On macOS, use `brew install certbot`.
+
+Request a certificate for `localhost`. certbot's `--standalone` mode answers the `http-01` challenge with its own small web server on port 80, so it needs `sudo`:
+
+```sh title="terminal"
+sudo REQUESTS_CA_BUNDLE=$(step path)/certs/root_ca.crt \
+  certbot certonly --standalone \
+  --server https://localhost:9000/acme/acme/directory \
+  -d localhost \
+  --register-unsafely-without-email --agree-tos
+```
+
+`REQUESTS_CA_BUNDLE` tells certbot to trust your root when it talks to step-ca. Your shell expands `$(step path)` before `sudo` runs, so root uses your CA files.
+
+```text title="Expected output (excerpt)"
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Account registered.
+Requesting a certificate for localhost
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/localhost/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/localhost/privkey.pem
+This certificate expires on 2026-11-13.
+These files will be updated when the certificate renews.
+...
+```
+
+No password was typed. certbot proved it controls `localhost` by answering on port 80.
+
+## 4. Watch the conversation
+
+Look at your step-ca terminal. Each ACME step left a log line. Here are their paths, in order:
+
+```text title="step-ca log (paths only)"
+GET  /acme/acme/directory
+HEAD /acme/acme/new-nonce
+POST /acme/acme/new-account
+POST /acme/acme/new-order
+POST /acme/acme/authz/YVFw4x1PlgLPkUII6VsjqpIgPg5YrCOR
+POST /acme/acme/challenge/YVFw4x1PlgLPkUII6VsjqpIgPg5YrCOR/LdpQ8bHcpdjE9WT24kbwtEoox1ryLXy0
+POST /acme/acme/authz/YVFw4x1PlgLPkUII6VsjqpIgPg5YrCOR
+POST /acme/acme/order/40qWUK2YVqbsox4ov4dA0XMddcRE5YYt/finalize
+POST /acme/acme/order/40qWUK2YVqbsox4ov4dA0XMddcRE5YYt
+POST /acme/acme/certificate/6fBo787rMjTkxNHD9PPH3HZOnGN1MiI7
+```
+
+Match it to the six steps above. The second `authz` request is certbot checking whether validation passed. The `new-nonce` call gets a one-time number that stops replayed requests.
+
+## 5. Inspect the result
+
+```sh title="terminal"
+sudo step certificate inspect /etc/letsencrypt/live/localhost/fullchain.pem --bundle --short
+```
+
+```text title="Expected output"
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 2644...8891]
+  Subject:     localhost
+  Issuer:      pki.fun Lab Intermediate CA 2
+  Provisioner: acme
+  Valid from:  2026-11-12T12:06:27Z
+          to:  2026-11-13T12:07:27Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1159...2195]
+  Subject:     pki.fun Lab Intermediate CA 2
+  Issuer:      pki.fun Lab Root CA
+  Valid from:  2026-11-12T12:06:45Z
+          to:  2036-11-09T12:06:45Z
+```
+
+The provisioner is now `acme`, and the lifetime is still 24 hours. The issuer is `Intermediate CA 2` because you rotated it in [module 6](/guides/operations/). If you skipped that, you'll see the original intermediate.
+
+Look at the subject and SAN:
+
+```sh title="terminal"
+sudo openssl x509 -in /etc/letsencrypt/live/localhost/cert.pem -noout -subject -ext subjectAltName
+```
+
+```text title="Expected output"
+subject=
+X509v3 Subject Alternative Name: critical
+    DNS:localhost
+```
+
+The subject is empty. Modern ACME clients put names only in the SAN. When the subject is empty, RFC 5280 says the SAN extension must be **critical**, and it is.
+
+## 6. Renew
+
+certbot saved everything it needs in `/etc/letsencrypt/renewal/localhost.conf`, including your server URL. Ask it to renew:
+
+```sh title="terminal"
+sudo REQUESTS_CA_BUNDLE=$(step path)/certs/root_ca.crt certbot renew
+```
+
+```text title="Expected output (certbot 4.0 or later)"
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Processing /etc/letsencrypt/renewal/localhost.conf
+Certificate not yet due for renewal
+
+The following certificates are not due for renewal yet:
+  /etc/letsencrypt/live/localhost/fullchain.pem expires on 2026-11-13 (skipped)
+No renewals were attempted.
+```
+
+certbot 4.0 and later renew when a third of the lifetime is left, or half for certificates shorter than 10 days. A 24-hour certificate renews after 12 hours. Older certbot versions, like the 2.x in Ubuntu 24.04, renew 30 days before expiry. With a 24-hour certificate, that means every run.
+
+The certbot package installs a timer that runs `certbot renew` twice a day. That's tuned for 90-day public certificates. For 24-hour certificates, run it more often, for example every 15 minutes. On older certbot versions, also add `renew_before_expiry = 8 hours` to the top of `/etc/letsencrypt/renewal/localhost.conf`. Another option is longer ACME certificates, set with the provisioner's `--x509-default-dur` flag.
+
+## Break it
+
+### The CA can't reach the name
+
+Ask for a name that doesn't point at your machine:
+
+```sh title="terminal"
+sudo REQUESTS_CA_BUNDLE=$(step path)/certs/root_ca.crt \
+  certbot certonly --standalone \
+  --server https://localhost:9000/acme/acme/directory \
+  -d nothere.example.com
+```
+
+```text title="Expected output (excerpt)"
+Requesting a certificate for nothere.example.com
+All authorizations were not finalized by the CA.
+```
+
+certbot's summary is vague. The real reason is in `/var/log/letsencrypt/letsencrypt.log`:
+
+```text title="letsencrypt.log (excerpt)"
+"type":"http-01","status":"pending","token":"1LODNB6Igq0YfD2TNjzwcK7qnmX2yZh2","url":"https://localhost:9000/acme/acme/challenge/jzhT9RudFT5R3q4dUbI8dNfWUaBWMJw6/dq7YwNDsGE2UB2Sj50yvwjRfUEjPcyYV","error":{"type":"urn:ietf:params:acme:error:connection","detail":"The server could not connect to validation target"}
+```
+
+The CA tried to fetch the token from `nothere.example.com` and couldn't. This is ACME working as designed. Note the error type: ACME errors are URNs from RFC 8555, so every client and server speaks the same language.
+
+The same log shows the full challenge list step-ca offered: `dns-01`, `http-01` and `tls-alpn-01`.
+
+### The client doesn't trust your CA
+
+Leave out `REQUESTS_CA_BUNDLE`:
+
+```sh title="terminal"
+sudo certbot certonly --standalone \
+  --server https://localhost:9000/acme/acme/directory -d localhost
+```
+
+```text title="Expected output (excerpt)"
+An unexpected error occurred:
+requests.exceptions.SSLError: HTTPSConnectionPool(host='localhost', port=9000): Max retries exceeded with url: /acme/acme/directory (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1035)')))
+```
+
+The same "unable to get local issuer certificate" you met in [module 6](/guides/operations/). A private ACME server needs its root installed on every client, through `REQUESTS_CA_BUNDLE`, the system trust store, or `step certificate install`.
+
+## DNS-01 and wildcards
+
+`http-01` can't prove you control `*.example.com`. There's no single host to fetch from. For wildcards, and for servers behind a firewall, use `dns-01`.
+
+The client creates a TXT record at `_acme-challenge.example.com`. Its value is a hash of the key authorization. The CA looks it up, then the client deletes it.
+
+That means your ACME client needs API access to your DNS provider. Clients such as [lego](https://go-acme.github.io/lego/) and [acme.sh](https://github.com/acmesh-official/acme.sh) support dozens of providers. Guard those DNS API credentials as carefully as a private key. With them, anyone can get a certificate for your domain.
+
+:::caution[ACME means anyone who passes]
+An ACME provisioner issues to **any** client that passes a challenge. On a private network, limit it. step-ca [certificate issuance policies](https://smallstep.com/docs/step-ca/policies/) can restrict an ACME provisioner to names like `*.internal.example.com`.
+:::
+
+## Where ACME shows up next
+
+Many tools speak ACME natively. Point them at your directory URL and trust your root:
+
+- **Caddy** gets and renews certificates automatically. It has an `acme_ca` option.
+- **Traefik** has `certificatesResolvers` with a custom `caServer`.
+- **nginx** has no built-in client. Pair it with certbot and `--deploy-hook "systemctl reload nginx"`.
+
+Device attestation is an ACME extension too. It lets a device prove its key lives in a TPM or secure enclave before it gets a certificate.
+
+## Go deeper
+
+- [RFC 8555](https://datatracker.ietf.org/doc/html/rfc8555) — the ACME protocol.
+- [RFC 8737](https://datatracker.ietf.org/doc/html/rfc8737) — the `tls-alpn-01` challenge.
+- [step-ca ACME documentation](https://smallstep.com/docs/step-ca/acme-basics/)
+- [Configuring popular ACME clients for a private CA](https://smallstep.com/docs/tutorials/acme-protocol-acme-clients/)
+- [certbot documentation](https://eff-certbot.readthedocs.io/)
+- [Let's Encrypt: how it works](https://letsencrypt.org/how-it-works/)
