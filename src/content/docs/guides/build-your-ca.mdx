@@ -188,6 +188,10 @@ Only one step-ca can use the database at a time. If you see this and don't think
 
 Stop the CA with `Ctrl+C`. Start it again and type the wrong password:
 
+```sh title="terminal"
+step-ca $(step path)/config/ca.json
+```
+
 ```text title="Expected output (excerpt)"
 error decrypting /home/you/.step/secrets/intermediate_ca_key: x509: decryption password incorrect
 ```

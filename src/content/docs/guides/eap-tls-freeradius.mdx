@@ -337,7 +337,17 @@ Good. The root alone isn't enough, because it signs laptops too. The name check 
 
 ### A client certificate from another CA
 
-Any certificate from a CA that isn't in `ca_file` fails. If you have a second test CA, issue a client certificate from it and try it. FreeRADIUS logs:
+Any certificate from a CA that isn't in `ca_file` fails. If you have a second test CA, issue a client certificate from it as `other.crt` and `other.key`. Point a copy of the config at it:
+
+```sh title="terminal"
+sed -e 's/alice.crt/other.crt/' -e 's/alice.key/other.key/' eaptls.conf > otherca.conf
+```
+
+```sh title="terminal"
+eapol_test -c otherca.conf -a 127.0.0.1 -s testing123
+```
+
+FreeRADIUS logs:
 
 ```text title="FreeRADIUS debug output (excerpt)"
 (10) eap_tls:   ERROR: (TLS) OpenSSL says error 20 : unable to get local issuer certificate

@@ -91,13 +91,13 @@ That's the whole API surface. Notice there's no "log in" endpoint. Trust comes f
 
 certbot is the EFF's ACME client. It works with any ACME server, not just Let's Encrypt.
 
-Install it:
+If you skipped it in [Lab Setup](/setup/), install it from the Snap Store:
 
 ```sh title="terminal"
-sudo apt install -y certbot
+sudo snap install --classic certbot
 ```
 
-On macOS, use `brew install certbot`.
+The snap tracks current certbot releases. Ubuntu's apt package is an older 2.x. On macOS, use `brew install certbot`.
 
 Request a certificate for `localhost`. certbot's `--standalone` mode answers the `http-01` challenge with its own small web server on port 80, so it needs `sudo`:
 
@@ -199,9 +199,9 @@ The following certificates are not due for renewal yet:
 No renewals were attempted.
 ```
 
-certbot 4.0 and later renew when a third of the lifetime is left, or half for certificates shorter than 10 days. A 24-hour certificate renews after 12 hours. Older certbot versions, like the 2.x in Ubuntu 24.04, renew 30 days before expiry. With a 24-hour certificate, that means every run.
+certbot 4.0 and later renew when a third of the lifetime is left, or half for certificates shorter than 10 days. A 24-hour certificate renews after 12 hours. Older certbot versions, like the 2.x in Ubuntu 24.04's apt package, renew 30 days before expiry. With a 24-hour certificate, that means every run.
 
-The certbot package installs a timer that runs `certbot renew` twice a day. That's tuned for 90-day public certificates. For 24-hour certificates, run it more often, for example every 15 minutes. On older certbot versions, also add `renew_before_expiry = 8 hours` to the top of `/etc/letsencrypt/renewal/localhost.conf`. Another option is longer ACME certificates, set with the provisioner's `--x509-default-dur` flag.
+The certbot snap installs a timer that runs `certbot renew` twice a day. That's tuned for 90-day public certificates. For 24-hour certificates, run it more often, for example every 15 minutes. On older certbot versions, also add `renew_before_expiry = 8 hours` to the top of `/etc/letsencrypt/renewal/localhost.conf`. Another option is longer ACME certificates, set with the provisioner's `--x509-default-dur` flag.
 
 ## Break it
 

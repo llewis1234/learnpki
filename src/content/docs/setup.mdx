@@ -43,13 +43,19 @@ wget https://github.com/smallstep/certificates/releases/download/v0.30.2/step-ca
 sudo dpkg -i step-ca_0.30.2-1_amd64.deb
 ```
 
+On ARM machines, swap `amd64` for `arm64` in both file names.
+
 Install the remaining tools from your distribution:
 
 ```sh title="terminal"
-sudo apt install -y openssl nginx freeradius eapoltest certbot openssh-server curl
+sudo apt install -y openssl nginx freeradius eapoltest openssh-server curl
 ```
 
-On ARM machines, swap `amd64` for `arm64` in both file names.
+Install certbot from the Snap Store. Ubuntu's apt package is an older 2.x release:
+
+```sh title="terminal"
+sudo snap install --classic certbot
+```
 
 </TabItem>
 <TabItem label="macOS">

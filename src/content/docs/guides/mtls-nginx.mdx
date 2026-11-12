@@ -177,7 +177,13 @@ nginx has only the root. Without the intermediate, it can't build the chain. Thi
 
 ### A client certificate from another CA
 
-Any certificate from a CA that nginx doesn't trust gets the same answer. If you made a second test CA, try a client certificate from it:
+Any certificate from a CA that nginx doesn't trust gets the same answer. If you made a second test CA, issue a client certificate from it as `other.crt` and `other.key`, then try it:
+
+```sh title="terminal"
+curl --cacert root_ca.crt \
+  --cert other.crt --key other.key \
+  https://localhost:8443
+```
 
 ```text title="Expected output (excerpt)"
 <html>

@@ -422,7 +422,19 @@ DONE
 
 ### Break it: read the error numbers
 
-Restart `s_server` **without** `-cert_chain`, so it sends only the leaf. Connect again:
+Stop `s_server` with `Ctrl+C`. Restart it **without** `-cert_chain`, so it sends only the leaf:
+
+```sh title="terminal"
+openssl s_server -accept 8443 -cert web.crt -key web.key -www
+```
+
+Connect again from the other terminal:
+
+```sh title="terminal"
+openssl s_client -connect localhost:8443 -servername web.example.com \
+  -CAfile $(step path)/certs/root_ca.crt \
+  -verify_hostname web.example.com -brief </dev/null
+```
 
 ```text title="Expected output (excerpt)"
 depth=0 CN = web.example.com

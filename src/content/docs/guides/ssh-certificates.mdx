@@ -152,30 +152,38 @@ Save the user CA key where sshd can read it:
 step ssh config --roots | sudo tee /etc/ssh/ssh_user_ca.pub
 ```
 
-Create a config file for the lab:
+{/* UNVERIFIED: the separate config file, `sshd -t -f`, `-f` start and PID-file stop were checked with `sshd -T` on OpenSSH 9.9 (macOS), not run on Ubuntu 24.04. */}
 
-```text title="/etc/ssh/sshd_config.d/pki-fun.conf"
+Create a config file for the lab. Keep it out of `/etc/ssh/sshd_config.d/`, because your normal SSH server reads every file there:
+
+```text title="/etc/ssh/pki-fun-sshd.conf"
 TrustedUserCAKeys /etc/ssh/ssh_user_ca.pub
 HostCertificate /etc/ssh/ssh_host_ecdsa_key-cert.pub
+PidFile /run/sshd-pki-fun.pid
+Include /etc/ssh/sshd_config
 ```
 
 - `TrustedUserCAKeys` accepts any user certificate signed by this CA.
 - `HostCertificate` makes sshd present its certificate to clients.
+- `PidFile` keeps the lab server's process ID apart from your normal server's.
+- `Include` pulls in everything else from your normal config. The lab lines come first because sshd keeps the first value it reads for most settings.
+
+Only the lab server loads this file, so your normal SSH server never trusts the lab CA.
 
 Test the config:
 
 ```sh title="terminal"
-sudo sshd -t && echo "sshd config OK"
+sudo sshd -t -f /etc/ssh/pki-fun-sshd.conf && echo "sshd config OK"
 ```
 
 ```text title="Expected output"
 sshd config OK
 ```
 
-Start a second sshd on port 2222:
+Start a second sshd on port 2222 with the lab config:
 
 ```sh title="terminal"
-sudo /usr/sbin/sshd -p 2222
+sudo /usr/sbin/sshd -f /etc/ssh/pki-fun-sshd.conf -p 2222
 ```
 
 Create a local account for Alice to log in to:
@@ -266,6 +274,10 @@ No account password. No "Are you sure you want to continue connecting?" Both sid
 
 Add `-v` to see it happen:
 
+```sh title="terminal"
+ssh -v -p 2222 alice@localhost whoami
+```
+
 ```text title="Expected output (excerpt)"
 debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic, serial 1958076320432791810 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:Ac/aovljhIEACbjpZg2FDwSuczABBm9DbMSgyXxI2Oo valid from 2026-11-12T12:08:44 to 2026-12-12T12:09:44
 debug1: Host '[localhost]:2222' is known and matches the ECDSA-CERT host certificate.
@@ -333,14 +345,16 @@ The host certificate only helps clients that trust the host CA. Put the line bac
 
 ## Clean up
 
-Stop the lab sshd and remove its config:
+Stop the lab sshd, using its PID file:
 
 ```sh title="terminal"
-sudo pkill -f "sshd -p 2222"
+sudo kill $(cat /run/sshd-pki-fun.pid)
 ```
 
+Remove its config:
+
 ```sh title="terminal"
-sudo rm /etc/ssh/sshd_config.d/pki-fun.conf
+sudo rm /etc/ssh/pki-fun-sshd.conf
 ```
 
 ## Go deeper
