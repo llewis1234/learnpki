@@ -1,0 +1,87 @@
+#cloud-config
+#
+# Lab VM
+#
+# Builds a disposable Ubuntu 24.04 machine with every tool the lessons use.
+# Launch it with Multipass:
+#
+#   multipass launch 24.04 --name pki-lab --cpus 2 --memory 2G --disk 10G \
+#     --timeout 900 --cloud-init cloud-init.yaml
+#
+# Keep STEP_CLI_VERSION and STEP_CA_VERSION in step with labs/versions.env.
+# CI fails if they differ. The SHA-256 values come from each release's
+# checksums.txt on GitHub.
+
+hostname: pki-lab
+
+package_update: true
+package_upgrade: false
+
+packages:
+  - curl
+  - jq
+  - openssl
+  - nginx
+  - freeradius
+  - eapoltest
+  - openssh-server
+
+write_files:
+  # Installs the pinned step CLI and step-ca packages after checking their hashes.
+  - path: /usr/local/sbin/pki-lab-install-step
+    permissions: "0755"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+
+      STEP_CLI_VERSION=0.31.0
+      STEP_CA_VERSION=0.30.2
+
+      arch=$(dpkg --print-architecture)
+      case "$arch" in
+        amd64)
+          cli_sha=dbea61cba1854e07625d8f064d83441c7f9232edd9440bc08a78614dcc8232fc
+          ca_sha=f8e43f0f2ba1e37121b75623993ea0bece5cc3a02b73eefc16e414d41c9fec71
+          ;;
+        arm64)
+          cli_sha=04e93161210667587e5f5c966a46ce09b15a7acca9c1b263fd0d639be72ba670
+          ca_sha=31faf820c64a8365081fd25d6e37b5b5ece0ae2f1e136ae41a639606e63cf8a7
+          ;;
+        *)
+          echo "pki-lab: unsupported architecture: $arch" >&2
+          exit 1
+          ;;
+      esac
+
+      cli_deb="step-cli_${STEP_CLI_VERSION}-1_${arch}.deb"
+      ca_deb="step-ca_${STEP_CA_VERSION}-1_${arch}.deb"
+
+      work=$(mktemp -d)
+      trap 'rm -rf "$work"' EXIT
+      cd "$work"
+
+      curl -fsSLO "https://github.com/smallstep/cli/releases/download/v${STEP_CLI_VERSION}/${cli_deb}"
+      curl -fsSLO "https://github.com/smallstep/certificates/releases/download/v${STEP_CA_VERSION}/${ca_deb}"
+
+      printf '%s  %s\n%s  %s\n' "$cli_sha" "$cli_deb" "$ca_sha" "$ca_deb" | sha256sum -c -
+
+      DEBIAN_FRONTEND=noninteractive apt-get install -y "./${cli_deb}" "./${ca_deb}"
+
+  # The lab sshd in module 8 needs this folder. /run is emptied at each boot.
+  - path: /etc/tmpfiles.d/pki-lab-sshd.conf
+    content: |
+      d /run/sshd 0755 root root -
+
+runcmd:
+  - [/usr/local/sbin/pki-lab-install-step]
+  # Current certbot. Ubuntu's apt package is an older 2.x release.
+  - [snap, install, --classic, certbot]
+  # Module 5 runs FreeRADIUS by hand in debug mode.
+  - [systemctl, disable, --now, freeradius]
+  # Free port 80 for certbot in module 7. Module 4 adds its own server on 8443.
+  - [rm, -f, /etc/nginx/sites-enabled/default]
+  - [systemctl, restart, nginx]
+  - [systemd-tmpfiles, --create, /etc/tmpfiles.d/pki-lab-sshd.conf]
+  - [sudo, -u, ubuntu, mkdir, -p, /home/ubuntu/pki-lab]
+
+final_message: "Lab VM is ready after $UPTIME seconds."

@@ -1,6 +1,7 @@
 ---
 import { Code } from '@astrojs/starlight/components';
 import Icon from './Icon.astro';
+import { SITE_NAME } from '../../site.config.mjs';
 
 const tracks = [
 	{ icon: 'key', title: 'PKI', text: 'Keys, certificates, CAs and chains of trust — explained plainly, then built for real.' },
@@ -15,7 +16,7 @@ const tracks = [
 			<span class="badge"><Icon name="terminal" class="badge-icon" /> Free · Open-source tools · No experience needed</span>
 			<h1 id="_top">Learn certificates by <span class="hl">building</span> them.</h1>
 			<p class="lede">
-				Whether you're curious, studying, or managing systems, pki.fun walks you from “what is a certificate?” to
+				Whether you're curious, studying, or managing systems, {SITE_NAME} walks you from “what is a certificate?” to
 				running your own CA, mutual TLS and EAP-TLS — on your own machine.
 			</p>
 			<div class="actions">
@@ -27,7 +28,7 @@ const tracks = [
 			<Code
 				lang="sh"
 				title="Your first CA, in one command"
-				code={`step ca init --name "pki.fun Lab" \\\n  --dns localhost --address 127.0.0.1:9000 \\\n  --provisioner admin@example.com`}
+				code={`step ca init --name "Lab CA" \\\n  --dns localhost --address 127.0.0.1:9000 \\\n  --provisioner admin@example.com`}
 			/>
 			<Code
 				lang="text"

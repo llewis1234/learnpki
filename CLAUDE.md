@@ -2,7 +2,8 @@
 
 ## Brand and tone
 
-- The site is **pki.fun** everywhere: title, copy, footer and docs. It is an independent community project.
+- The brand name and site URL each live in one value in `site.config.mjs` (`SITE_NAME`, `SITE_URL`). Never hard-code them in pages, components or config. In MDX, import them. Frontmatter can't import, so keep the brand out of titles and descriptions. It is an independent community project.
+- Labs carry no brand: the CA is `Lab CA`, the lab folder is `~/pki-lab`, and system folders use `pki-lab` (for example `/etc/pki-lab`).
 - Keep the footer disclaimer: not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.
 - No fictional company or story framing. Lessons teach the technology directly, using neutral names like `localhost`, `alice` and `example.com`.
 - Use only original art. Do not use Smallstep logos, Smallstep brand colors, copied tutorial text, or references to TV shows or films.
@@ -23,7 +24,9 @@
 
 ## Lab rules
 
-- Learners keep the CA in the step CLI's default `$(step path)` directory and work in one folder per lesson under `~/pki-fun-lab`. Lessons build on each other: later modules use the CA from module 2.
+- The default lab environment is the Multipass VM built from `public/lab/cloud-init.yaml` (Ubuntu 24.04, user `ubuntu`). Capture expected output there, so paths read `/home/ubuntu/...`. Host installs are the advanced option in Lab Setup.
+- When a pinned version changes, update `labs/versions.env`, the versions and SHA-256 hashes in `public/lab/cloud-init.yaml`, and Lab Setup together. CI fails if the step versions differ.
+- Learners keep the CA in the step CLI's default `$(step path)` directory and work in one folder per lesson under `~/pki-lab`. Lessons build on each other: later modules use the CA from module 2.
 - Pin tool versions in `labs/versions.env` and state them in Lab Setup and lessons.
 - Use real passwords in lesson instructions. Any `--no-password`, `--password-file` or `--insecure` flags in scripts must have a nearby comment that says they are for CI only.
 - Verify every command and flag against the pinned tool or its official documentation. Never invent output; run commands to capture it.

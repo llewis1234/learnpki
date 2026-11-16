@@ -2,6 +2,7 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 import starlightLinksValidator from 'starlight-links-validator';
+import { SITE_URL, SITE_NAME, REPO_URL } from './site.config.mjs';
 
 const lessons = [
 	'guides/pki-foundations',
@@ -15,10 +16,10 @@ const lessons = [
 ];
 
 export default defineConfig({
-	site: 'https://pki.fun',
+	site: SITE_URL,
 	integrations: [
 		starlight({
-			title: 'pki.fun',
+			title: SITE_NAME,
 			disable404Route: true,
 			description:
 				'A free, hands-on place to learn certificate technologies. Build a real CA, secure services with mTLS and set up EAP-TLS using open-source tools.',
@@ -50,10 +51,11 @@ export default defineConfig({
 				},
 			},
 			plugins: [starlightLinksValidator()],
+			routeMiddleware: './src/routeData.ts',
 			editLink: {
-				baseUrl: 'https://github.com/llewis1234/pki-fun/edit/main/',
+				baseUrl: `${REPO_URL}/edit/main/`,
 			},
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/llewis1234/pki-fun' }],
+			social: [{ icon: 'github', label: 'GitHub', href: REPO_URL }],
 			components: {
 				Header: './src/components/Header.astro',
 				PageTitle: './src/components/PageTitle.astro',

@@ -30,7 +30,7 @@ You don't need any special hardware. A laptop is enough. When you're ready to ha
 ```sh title="terminal"
 step ca init \
   --deployment-type standalone \
-  --name "pki.fun Lab" \
+  --name "Lab CA" \
   --dns localhost \
   --address 127.0.0.1:9000 \
   --provisioner admin@example.com
@@ -50,14 +50,14 @@ Here is what each flag does:
 Generating root certificate... done!
 Generating intermediate certificate... done!
 
-✔ Root certificate: /home/you/.step/certs/root_ca.crt
-✔ Root private key: /home/you/.step/secrets/root_ca_key
-✔ Root fingerprint: cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
-✔ Intermediate certificate: /home/you/.step/certs/intermediate_ca.crt
-✔ Intermediate private key: /home/you/.step/secrets/intermediate_ca_key
-✔ Database folder: /home/you/.step/db
-✔ Default configuration: /home/you/.step/config/defaults.json
-✔ Certificate Authority configuration: /home/you/.step/config/ca.json
+✔ Root certificate: /home/ubuntu/.step/certs/root_ca.crt
+✔ Root private key: /home/ubuntu/.step/secrets/root_ca_key
+✔ Root fingerprint: 0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
+✔ Intermediate certificate: /home/ubuntu/.step/certs/intermediate_ca.crt
+✔ Intermediate private key: /home/ubuntu/.step/secrets/intermediate_ca_key
+✔ Database folder: /home/ubuntu/.step/db
+✔ Default configuration: /home/ubuntu/.step/config/defaults.json
+✔ Certificate Authority configuration: /home/ubuntu/.step/config/ca.json
 
 Your PKI is ready to go. To generate certificates for individual services see 'step help ca'.
 ```
@@ -97,10 +97,10 @@ step-ca $(step path)/config/ca.json
 
 ```text title="Expected output (excerpt)"
 Starting Smallstep CA/0.30.2 (linux/amd64)
-Config file: /home/you/.step/config/ca.json
+Config file: /home/ubuntu/.step/config/ca.json
 The primary server URL is https://localhost:9000
 Root certificates are available at https://localhost:9000/roots.pem
-X.509 Root Fingerprint: cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
+X.509 Root Fingerprint: 0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
 Serving HTTPS on 127.0.0.1:9000 ...
 ```
 
@@ -127,11 +127,11 @@ step certificate inspect $(step path)/certs/root_ca.crt --short
 ```
 
 ```text title="Expected output"
-X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 2974...2760]
-  Subject:     pki.fun Lab Root CA
-  Issuer:      pki.fun Lab Root CA
-  Valid from:  2026-11-12T12:03:56Z
-          to:  2036-11-09T12:03:56Z
+X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 2015...2654]
+  Subject:     Lab CA Root CA
+  Issuer:      Lab CA Root CA
+  Valid from:  2026-11-16T03:58:13Z
+          to:  2036-11-13T03:58:13Z
 ```
 
 Notice the Subject and Issuer are the same — that's what makes it a self-signed root. It's valid for 10 years. Your serial number and dates will differ.
@@ -179,7 +179,7 @@ step-ca $(step path)/config/ca.json
 ```
 
 ```text title="Expected output (excerpt)"
-Error opening database of Type badgerv2: error opening Badger database: Cannot acquire directory lock on "/home/you/.step/db".  Another process is using this Badger database.: resource temporarily unavailable
+Error opening database of Type badgerv2: error opening Badger database: Cannot acquire directory lock on "/home/ubuntu/.step/db".  Another process is using this Badger database.: resource temporarily unavailable
 ```
 
 Only one step-ca can use the database at a time. If you see this and don't think a CA is running, look for a forgotten one with `pgrep -a step-ca`.
@@ -193,7 +193,7 @@ step-ca $(step path)/config/ca.json
 ```
 
 ```text title="Expected output (excerpt)"
-error decrypting /home/you/.step/secrets/intermediate_ca_key: x509: decryption password incorrect
+error decrypting /home/ubuntu/.step/secrets/intermediate_ca_key: x509: decryption password incorrect
 ```
 
 step-ca needs the intermediate key to sign anything, so it won't start without it. Start it again with the right password before you continue.

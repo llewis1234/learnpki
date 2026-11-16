@@ -28,7 +28,7 @@ In normal TLS only the server shows a certificate. With **mutual TLS (mTLS)** th
 You need the CA from [module 2](/guides/build-your-ca/) running before you start. Work in a new folder:
 
 ```sh title="terminal"
-mkdir -p ~/pki-fun-lab/mtls && cd ~/pki-fun-lab/mtls
+mkdir -p ~/pki-lab/mtls && cd ~/pki-lab/mtls
 ```
 
 ## 1. Issue a server certificate
@@ -40,7 +40,7 @@ step ca certificate localhost server.crt server.key
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
 ✔ CA: https://localhost:9000
 ✔ Certificate: server.crt
 ✔ Private Key: server.key
@@ -53,7 +53,7 @@ step ca certificate alice client.crt client.key
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
 ✔ CA: https://localhost:9000
 ✔ Certificate: client.crt
 ✔ Private Key: client.key
@@ -72,13 +72,13 @@ cp $(step path)/certs/root_ca.crt .
 Create a folder for nginx to read from:
 
 ```sh title="terminal"
-sudo mkdir -p /etc/pki-fun
+sudo mkdir -p /etc/pki-lab
 ```
 
 Copy the server certificate, server key and root into it:
 
 ```sh title="terminal"
-sudo cp server.crt server.key root_ca.crt /etc/pki-fun/
+sudo cp server.crt server.key root_ca.crt /etc/pki-lab/
 ```
 
 ## 4. Configure nginx
@@ -88,11 +88,11 @@ server {
     listen 8443 ssl;
     server_name localhost;
 
-    ssl_certificate         /etc/pki-fun/server.crt;
-    ssl_certificate_key     /etc/pki-fun/server.key;
+    ssl_certificate         /etc/pki-lab/server.crt;
+    ssl_certificate_key     /etc/pki-lab/server.key;
 
     # Trust only client certs from our CA
-    ssl_client_certificate  /etc/pki-fun/root_ca.crt;
+    ssl_client_certificate  /etc/pki-lab/root_ca.crt;
     ssl_verify_client       on;
     ssl_verify_depth        2;
 
@@ -197,8 +197,8 @@ sudo grep "client SSL certificate verify" /var/log/nginx/error.log
 ```
 
 ```text title="Expected output (excerpt)"
-[info] 4832#4832: *1 client SSL certificate verify error: (21:unable to verify the first certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
-[info] 4831#4831: *2 client SSL certificate verify error: (20:unable to get local issuer certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
+[info] 604#604: *4 client SSL certificate verify error: (21:unable to verify the first certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
+[info] 604#604: *6 client SSL certificate verify error: (20:unable to get local issuer certificate) while reading client request headers, client: 127.0.0.1, server: localhost ...
 ```
 
 The numbers are OpenSSL error codes. [Module 6](/guides/operations/) has a table of the common ones.

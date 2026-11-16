@@ -14,5 +14,10 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Check lab VM versions match labs/versions.env
+        run: |
+          . labs/versions.env
+          grep -q "STEP_CLI_VERSION=${STEP_CLI_VERSION}$" public/lab/cloud-init.yaml
+          grep -q "STEP_CA_VERSION=${STEP_CA_VERSION}$" public/lab/cloud-init.yaml
       - run: npm ci
       - run: npm run build

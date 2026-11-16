@@ -24,7 +24,7 @@ A certificate is not a one-time job. It is issued, renewed, sometimes revoked, a
 Keep the CA running. Work in a new folder:
 
 ```sh title="terminal"
-mkdir -p ~/pki-fun-lab/ops && cd ~/pki-fun-lab/ops
+mkdir -p ~/pki-lab/ops && cd ~/pki-lab/ops
 ```
 
 If you did [module 5](/guides/eap-tls-freeradius/), your CA has two JWK provisioners. When step asks which one to use, pick `admin@example.com`.
@@ -99,7 +99,7 @@ step ca renew --daemon web.crt web.key
 ```
 
 ```text title="Expected output"
-INFO: 2026/11/12 12:05:34 first renewal in 15h10m13s
+INFO: 2026/11/16 04:00:34 first renewal in 15h12m46s
 ```
 
 The daemon renews at about two thirds of the lifetime, with some random jitter. The jitter stops a fleet of machines from all hitting the CA at the same second.
@@ -112,10 +112,10 @@ step ca renew --daemon --renew-period 5s \
 ```
 
 ```text title="Expected output"
-INFO: 2026/11/12 12:05:36 first renewal in 5s
-INFO: 2026/11/12 12:05:41 web.example.com certificate renewed, next in 5s
+INFO: 2026/11/16 04:00:36 first renewal in 5s
+INFO: 2026/11/16 04:00:41 web.example.com certificate renewed, next in 5s
 reload nginx here
-INFO: 2026/11/12 12:05:46 web.example.com certificate renewed, next in 5s
+INFO: 2026/11/16 04:00:46 web.example.com certificate renewed, next in 5s
 reload nginx here
 ```
 
@@ -140,7 +140,7 @@ step certificate verify old.crt --roots $(step path)/certs/root_ca.crt
 ```
 
 ```text title="Expected output"
-failed to verify certificate: x509: certificate has expired or is not yet valid: current time 2026-11-12T12:12:24Z is after 2026-11-12T12:10:49Z
+failed to verify certificate: x509: certificate has expired or is not yet valid: current time 2026-11-16T04:05:50Z is after 2026-11-16T04:05:49Z
 ```
 
 Try to renew it:
@@ -150,7 +150,7 @@ step ca renew --force old.crt old.key
 ```
 
 ```text title="Expected output"
-The request lacked necessary authorization to be completed: certificate expired on 2026-11-12 12:10:49 +0000 UTC
+The request lacked necessary authorization to be completed: certificate expired on 2026-11-16 04:05:49 +0000 UTC
 Re-run with STEPDEBUG=1 for more info.
 ```
 
@@ -174,7 +174,7 @@ step ca revoke --cert laptop42.crt --key laptop42.key --reason "laptop lost"
 
 ```text title="Expected output"
 ✔ CA: https://localhost:9000
-Certificate with Serial Number 262230121224983783768000805556035068181 has been revoked.
+Certificate with Serial Number 325394138822214975015869222951509457176 has been revoked.
 ```
 
 When you don't have the key, revoke by serial number. step asks you to pick a provisioner and enter its password instead:
@@ -289,9 +289,12 @@ X509v3 CRL Distribution Points:
 step ca revoke --reasonCode KeyCompromise <laptop44-serial>
 ```
 
+step lists your JWK provisioners. Pick any of them and enter its password: any JWK provisioner can revoke any certificate.
+
 ```text title="Expected output"
+✔ Provisioner: wifi (JWK) [kid: c703dzooi6hSNFaz00eax8xRxcQuzObfwvOAbKiInGA]
 ✔ CA: https://localhost:9000
-Certificate with Serial Number 31039775850169235803696321860459902879 has been revoked.
+Certificate with Serial Number 167336704577127535296999873164195410580 has been revoked.
 ```
 
 Download the CRL and read it:
@@ -308,25 +311,25 @@ openssl crl -inform DER -in ca.crl -noout -text
 Certificate Revocation List (CRL):
         Version 2 (0x1)
         Signature Algorithm: ecdsa-with-SHA256
-        Issuer: O = pki.fun Lab, CN = pki.fun Lab Intermediate CA
-        Last Update: Nov 12 12:06:04 2026 GMT
-        Next Update: Nov 13 12:06:04 2026 GMT
+        Issuer: O = Lab CA, CN = Lab CA Intermediate CA
+        Last Update: Nov 16 04:01:20 2026 GMT
+        Next Update: Nov 17 04:01:20 2026 GMT
         CRL extensions:
             X509v3 Authority Key Identifier: 
-                60:32:17:CE:F8:72:1C:F8:AC:12:B7:55:01:A9:CD:80:00:32:A3:E9
+                1B:7A:83:36:88:1C:E2:E6:78:50:0A:39:5F:5D:68:AC:A5:7F:9B:F0
             X509v3 CRL Number: 
                 1
             X509v3 Issuing Distribution Point: critical
                 Full Name:
                   URI:https://localhost:9000/1.0/crl
 Revoked Certificates:
-    Serial Number: 175A0B1ACCE3A9F19711E3EBBA99379F
-        Revocation Date: Nov 12 12:06:04 2026 GMT
+    Serial Number: 7DE3E083FD99626EB860E37FF7503294
+        Revocation Date: Nov 16 04:01:20 2026 GMT
         CRL entry extensions:
             X509v3 CRL Reason Code: 
                 Key Compromise
-    Serial Number: C547AF2CE460CA488DE79AA4AFB12115
-        Revocation Date: Nov 12 12:05:49 2026 GMT
+    Serial Number: F4CCA1AE7A7CB4CC115201FCFF927918
+        Revocation Date: Nov 16 04:00:50 2026 GMT
 ```
 
 The CRL lists every revoked serial in hexadecimal, including `laptop42`, which you revoked passively earlier. It's signed by the intermediate, so nobody can forge it.
@@ -473,7 +476,7 @@ Intermediates should change from time to time. Clients trust the root, so a new 
 Create a new intermediate. You need the root key, so this is a rare, careful job:
 
 ```sh title="terminal"
-step certificate create "pki.fun Lab Intermediate CA 2" int2.crt int2.key \
+step certificate create "Lab CA Intermediate CA 2" int2.crt int2.key \
   --profile intermediate-ca \
   --ca $(step path)/certs/root_ca.crt \
   --ca-key $(step path)/secrets/root_ca_key
@@ -491,11 +494,11 @@ step certificate inspect int2.crt --short
 ```
 
 ```text title="Expected output"
-X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1159...2195]
-  Subject:     pki.fun Lab Intermediate CA 2
-  Issuer:      pki.fun Lab Root CA
-  Valid from:  2026-11-12T12:06:45Z
-          to:  2036-11-09T12:06:45Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1993...5668]
+  Subject:     Lab CA Intermediate CA 2
+  Issuer:      Lab CA Root CA
+  Valid from:  2026-11-16T04:02:18Z
+          to:  2036-11-13T04:02:18Z
 ```
 
 Move the files into place:
@@ -521,18 +524,18 @@ step certificate inspect web.crt --bundle --short
 ```
 
 ```text title="Expected output"
-X.509v3 TLS Certificate (ECDSA P-256) [Serial: 1928...3999]
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 1919...3580]
   Subject:     web.example.com
                localhost
-  Issuer:      pki.fun Lab Intermediate CA 2
-  Provisioner: admin@example.com [ID: x7bd...tw9U]
-  Valid from:  2026-11-12T12:05:50Z
-          to:  2026-11-13T12:06:50Z
-X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1159...2195]
-  Subject:     pki.fun Lab Intermediate CA 2
-  Issuer:      pki.fun Lab Root CA
-  Valid from:  2026-11-12T12:06:45Z
-          to:  2036-11-09T12:06:45Z
+  Issuer:      Lab CA Intermediate CA 2
+  Provisioner: admin@example.com [ID: Cd7t...AS_E]
+  Valid from:  2026-11-16T04:01:22Z
+          to:  2026-11-17T04:02:22Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1993...5668]
+  Subject:     Lab CA Intermediate CA 2
+  Issuer:      Lab CA Root CA
+  Valid from:  2026-11-16T04:02:18Z
+          to:  2036-11-13T04:02:18Z
 ```
 
 The renewal worked, and the new certificate comes from the new intermediate. Every client keeps working because the root is the same. Keep the old intermediate's files until every certificate it signed has expired.

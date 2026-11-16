@@ -1,13 +1,19 @@
 ---
 title: Lab Setup
-description: Install step CLI, step-ca, OpenSSL, nginx, FreeRADIUS, certbot and OpenSSH on Linux, macOS or Windows (WSL).
+description: Launch a disposable Ubuntu 24.04 lab VM with Multipass. Every tool the lessons use comes pre-installed, on macOS, Windows or Linux.
 ---
 
 import { Tabs, TabItem, CardGrid, Card } from '@astrojs/starlight/components';
 
-Everything runs locally and is free. Plan on about 15 minutes.
+The lessons run in a **lab VM**: a disposable Ubuntu 24.04 virtual machine. One setup file builds the same machine on macOS, Windows and Linux. The only thing you install on your own computer is Multipass, the tool that runs it.
 
-## What you'll need
+Plan on about 15 minutes, most of it waiting for downloads.
+
+:::tip[Why a VM?]
+The labs install servers, edit files in `/etc` and run commands with `sudo`. A VM keeps all of that off your own computer. It also gives you the exact versions the lesson output came from. When something breaks, roll back. When you're done, delete it.
+:::
+
+## What's in the lab VM
 
 <CardGrid>
 	<Card title="step CLI">Request, inspect and manage certificates.</Card>
@@ -17,16 +23,182 @@ Everything runs locally and is free. Plan on about 15 minutes.
 	<Card title="FreeRADIUS + eapol_test">RADIUS server and test client for the EAP-TLS lab.</Card>
 	<Card title="certbot">ACME client for the ACME lab.</Card>
 	<Card title="OpenSSH server">For the SSH certificates lab.</Card>
-	<Card title="curl">Test clients from the terminal.</Card>
+	<Card title="curl and jq">Test clients and JSON tools for the terminal.</Card>
 </CardGrid>
 
-The lessons are written against **step CLI 0.31.0** and **step-ca 0.30.2**. Newer versions should work, but output may differ slightly.
+The lessons are written against **step CLI 0.31.0** and **step-ca 0.30.2**. The lab VM installs exactly these versions and checks their SHA-256 hashes first.
 
-The labs were tested on Ubuntu 24.04 with OpenSSL 3.0.13, nginx 1.24.0, FreeRADIUS 3.2.5, eapol_test 2.10, OpenSSH 9.6 and certbot 5.10.
+The other tools come from Ubuntu 24.04: OpenSSL 3.0.13, nginx 1.24.0, FreeRADIUS 3.2.5, eapol_test 2.10 and OpenSSH 9.6. certbot comes from the Snap Store, so you get the current release.
 
-## Install
+{/* UNVERIFIED: the multipass commands follow Canonical's documentation. The cloud-init file passed `cloud-init schema` and its install script ran on Ubuntu 24.04, but a full `multipass launch` has not been run yet. */}
+
+## 1. Install Multipass
 
 <Tabs syncKey="os">
+<TabItem label="macOS">
+
+You need macOS 14 Sonoma or later, on Apple silicon or Intel.
+
+Download and run the installer from [canonical.com/multipass/install](https://canonical.com/multipass/install). Or use [Homebrew](https://brew.sh):
+
+```sh title="terminal"
+brew install --cask multipass
+```
+
+</TabItem>
+<TabItem label="Windows">
+
+You need Windows 10 or 11 (Home, Pro or Enterprise), version 1809 or later. Turn on the **Virtual Machine Platform** Windows feature first.
+
+1. Download the installer from [canonical.com/multipass/install](https://canonical.com/multipass/install).
+2. Set your network to **Private**. Windows stops Multipass from starting on a public network.
+3. Run the installer, and allow it administrator access.
+
+Run the `multipass` commands below in PowerShell or Command Prompt.
+
+</TabItem>
+<TabItem label="Linux">
+
+Install the snap:
+
+```sh title="terminal"
+sudo snap install multipass
+```
+
+</TabItem>
+</Tabs>
+
+Check that it works:
+
+```sh title="terminal"
+multipass version
+```
+
+It prints the Multipass version.
+
+## 2. Download the setup file
+
+Download <a href="/lab/cloud-init.yaml" download>cloud-init.yaml</a>. Save it in the folder where you'll open your terminal.
+
+This **cloud-init** file tells a new Ubuntu machine what to install on first boot. It's short. Read it before you run it, because it runs as root inside the VM. You'll see that it checks each step download against a known SHA-256 hash, the same idea as the [signature check in module 1](/guides/pki-foundations/).
+
+## 3. Launch the lab VM
+
+Run this from the folder that holds `cloud-init.yaml`:
+
+```sh title="terminal"
+multipass launch 24.04 --name pki-lab --cpus 2 --memory 2G --disk 10G --timeout 900 --cloud-init cloud-init.yaml
+```
+
+| Option | Meaning |
+|---|---|
+| `24.04` | The Ubuntu release. Every lesson was tested on it. |
+| `--name pki-lab` | The name you use in every other `multipass` command. |
+| `--cpus 2 --memory 2G --disk 10G` | Room for all the labs. Multipass's defaults are smaller. |
+| `--timeout 900` | Wait up to 15 minutes. The first launch downloads Ubuntu and every package. |
+| `--cloud-init cloud-init.yaml` | The setup file you downloaded. |
+
+Multipass waits until setup finishes. If the launch times out, setup keeps going in the background. Wait for it to finish:
+
+```sh title="terminal"
+multipass exec pki-lab -- cloud-init status --wait
+```
+
+## 4. Open a shell in the VM
+
+```sh title="terminal"
+multipass shell pki-lab
+```
+
+Your prompt changes to `ubuntu@pki-lab`. Run every lesson command here, unless a lesson tells you otherwise.
+
+## 5. Check it worked
+
+In the VM shell:
+
+```sh title="terminal"
+step version
+```
+
+```text title="Expected output"
+Smallstep CLI/0.31.0 (linux/amd64)
+Release Date: 2026-09-25T19:53:51Z
+```
+
+```sh title="terminal"
+step-ca version
+```
+
+```text title="Expected output"
+Smallstep CA/0.30.2 (linux/amd64)
+Release Date: 2026-03-23T00:18:00Z
+```
+
+On an Apple silicon Mac, the platform is `linux/arm64`. That's expected: the VM runs the ARM build of Ubuntu.
+
+Your lab folder is ready too:
+
+```sh title="terminal"
+ls -d ~/pki-lab
+```
+
+```text title="Expected output"
+/home/ubuntu/pki-lab
+```
+
+## 6. Take a snapshot
+
+A snapshot saves the VM as it is now. If a lab goes wrong, you can come back to this clean state in seconds.
+
+Leave the VM shell with `exit`. Then, on your own computer, stop the VM:
+
+```sh title="terminal"
+multipass stop pki-lab
+```
+
+Take the snapshot. Multipass can only snapshot a stopped VM:
+
+```sh title="terminal"
+multipass snapshot pki-lab --name fresh
+```
+
+Start the VM again:
+
+```sh title="terminal"
+multipass start pki-lab
+```
+
+To go back to the clean state later, stop the VM, then restore the snapshot:
+
+```sh title="terminal"
+multipass restore pki-lab.fresh --destructive
+```
+
+`--destructive` discards everything since the snapshot. Without it, Multipass asks whether to save the current state first.
+
+:::tip[Snapshot after module 2]
+Most lessons build on the CA from [module 2](/guides/build-your-ca/). Take a second snapshot, such as `--name ca-ready`, after you finish it.
+:::
+
+## Everyday commands
+
+Run these on your own computer, not in the VM:
+
+| Task | Command |
+|---|---|
+| Open a shell | `multipass shell pki-lab` |
+| Stop the VM | `multipass stop pki-lab` |
+| Start it again | `multipass start pki-lab` |
+| Copy a file out of the VM | `multipass transfer pki-lab:pki-lab/issue/web.crt .` |
+| Delete it for good | `multipass delete --purge pki-lab` |
+
+Each lesson's step-ca runs in the foreground. After a restart, start it again from the VM shell, as in [module 2](/guides/build-your-ca/#start-the-ca-server).
+
+## Advanced: install on your own machine
+
+You can skip the VM and install the tools directly. The lesson commands are the same. Some lab steps change system services, and your output shows your own paths instead of `/home/ubuntu`.
+
+<Tabs syncKey="host">
 <TabItem label="Linux (Debian/Ubuntu)">
 
 Download and install the step CLI package:
@@ -48,7 +220,7 @@ On ARM machines, swap `amd64` for `arm64` in both file names.
 Install the remaining tools from your distribution:
 
 ```sh title="terminal"
-sudo apt install -y openssl nginx freeradius eapoltest openssh-server curl
+sudo apt install -y openssl nginx freeradius eapoltest openssh-server curl jq
 ```
 
 Install certbot from the Snap Store. Ubuntu's apt package is an older 2.x release:
@@ -56,6 +228,20 @@ Install certbot from the Snap Store. Ubuntu's apt package is an older 2.x releas
 ```sh title="terminal"
 sudo snap install --classic certbot
 ```
+
+Make the lab folder:
+
+```sh title="terminal"
+mkdir -p ~/pki-lab
+```
+
+The lab VM also makes three changes you'll meet in the lessons on a host install:
+
+- The `freeradius` service starts on install. [Module 5](/guides/eap-tls-freeradius/) stops it.
+- nginx's default site holds port 80, which certbot needs in [module 7](/guides/acme/).
+- [Module 8](/guides/ssh-certificates/) needs the `/run/sshd` folder.
+
+Each lesson shows the fix where it matters.
 
 </TabItem>
 <TabItem label="macOS">
@@ -70,7 +256,7 @@ brew install step openssl nginx certbot
 
 Homebrew installs the latest release, which may be newer than the versions above.
 
-The EAP-TLS and SSH labs need a Linux server. Run them in an Ubuntu virtual machine or container. Everything else works on macOS.
+The EAP-TLS and SSH labs need a Linux server. Use the lab VM for those.
 
 </TabItem>
 <TabItem label="Windows (WSL)">
@@ -86,37 +272,7 @@ Then open Ubuntu and follow the Linux steps.
 </TabItem>
 </Tabs>
 
-## Check it worked
-
-```sh title="terminal"
-step version
-```
-
-```text title="Expected output"
-Smallstep CLI/0.31.0 (linux/amd64)
-Release Date: 2026-09-25T19:53:51Z
-```
-
-The platform in brackets matches your machine, for example `darwin/arm64` on an Apple silicon Mac.
-
-```sh title="terminal"
-step-ca version
-```
-
-```text title="Expected output"
-Smallstep CA/0.30.2 (linux/amd64)
-Release Date: 2026-03-23T00:18:00Z
-```
-
-## Make a lab folder
-
-Every lesson works in its own folder under `~/pki-fun-lab`:
-
-```sh title="terminal"
-mkdir -p ~/pki-fun-lab
-```
-
-step keeps your CA in `~/.step`. Run `step path` to see where. To start over at any time, stop step-ca and delete both folders.
+step keeps your CA in `~/.step`. Run `step path` to see where. To start over on a host install, stop step-ca and delete `~/.step` and `~/pki-lab`.
 
 :::note[Prefer containers?]
 You can run step-ca with Docker instead, using the official [smallstep/step-ca image](https://hub.docker.com/r/smallstep/step-ca). Commands in the lessons work the same once your CLI points at it.

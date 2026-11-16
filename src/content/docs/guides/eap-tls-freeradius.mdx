@@ -25,7 +25,7 @@ import Diagram from '../../../components/Diagram.astro';
 
 **EAP-TLS** is how many organisations let devices onto a network without passwords. The device presents a certificate, a RADIUS server checks it, and the switch or access point opens the port.
 
-In this lab you'll build the server side with FreeRADIUS and test it with `eapol_test`. You don't need an access point. Everything runs on one Linux machine.
+In this lab you'll build the server side with FreeRADIUS and test it with `eapol_test`. You don't need an access point. Everything runs in the [lab VM](/setup/).
 
 ## Why certificates for network access?
 
@@ -47,17 +47,21 @@ There's a second reason to run your own CA for this. Public CAs are moving away 
 
 The TLS handshake runs end to end between the device and FreeRADIUS. The access point only carries the packets.
 
-:::note[This lab needs Linux]
-Use Ubuntu, Debian, or Ubuntu under WSL. The package names and paths below are for Debian-based systems. They were tested with FreeRADIUS 3.2.5 and eapol_test 2.10.
+:::note[On your own machine]
+The lab VM has everything this lesson needs. On a host install, use Ubuntu or Debian. The package names and paths below are for Debian-based systems. They were tested with FreeRADIUS 3.2.5 and eapol_test 2.10.
 :::
 
-## 1. Install the tools
+## 1. Get the tools ready
+
+The lab VM already has FreeRADIUS and `eapol_test`, with the FreeRADIUS service turned off. You'll run FreeRADIUS by hand so you can watch it work.
+
+On a host install, install the tools:
 
 ```sh title="terminal"
 sudo apt install -y freeradius eapoltest
 ```
 
-Stop the background service. You'll run FreeRADIUS by hand so you can watch it work:
+Then stop the background service:
 
 ```sh title="terminal"
 sudo systemctl stop freeradius
@@ -93,7 +97,7 @@ step ca provisioner add wifi --type JWK --create \
 Choose a password for the new provisioner when asked.
 
 ```text title="Expected output"
-✔ CA Configuration: /home/you/.step/config/ca.json
+✔ CA Configuration: /home/ubuntu/.step/config/ca.json
 
 Success! Your `step-ca` config has been updated. To pick up the new configuration SIGHUP (kill -1 <pid>) or restart the step-ca process.
 ```
@@ -109,7 +113,7 @@ pkill -HUP -x step-ca
 Make a working folder:
 
 ```sh title="terminal"
-mkdir -p ~/pki-fun-lab/eap && cd ~/pki-fun-lab/eap
+mkdir -p ~/pki-lab/eap && cd ~/pki-lab/eap
 ```
 
 Issue the RADIUS server certificate. `--set role=server` picks the server branch of the template:
@@ -120,7 +124,7 @@ step ca certificate radius.example.com radius.crt radius.key \
 ```
 
 ```text title="Expected output"
-✔ Provisioner: wifi (JWK) [kid: n_31M_bK66vlwuG951crDVfaEC9q59Qz3E8EoTfNdw8]
+✔ Provisioner: wifi (JWK) [kid: c703dzooi6hSNFaz00eax8xRxcQuzObfwvOAbKiInGA]
 ✔ CA: https://localhost:9000
 ✔ Certificate: radius.crt
 ✔ Private Key: radius.key
@@ -163,25 +167,25 @@ cp $(step path)/certs/root_ca.crt .
 Make a folder FreeRADIUS can read:
 
 ```sh title="terminal"
-sudo mkdir -p /etc/freeradius/3.0/certs/pki-fun
+sudo mkdir -p /etc/freeradius/3.0/certs/pki-lab
 ```
 
 Copy the server certificate, its key and the root:
 
 ```sh title="terminal"
-sudo cp radius.crt radius.key root_ca.crt /etc/freeradius/3.0/certs/pki-fun/
+sudo cp radius.crt radius.key root_ca.crt /etc/freeradius/3.0/certs/pki-lab/
 ```
 
 Give the files to the `freerad` user:
 
 ```sh title="terminal"
-sudo chown -R freerad:freerad /etc/freeradius/3.0/certs/pki-fun
+sudo chown -R freerad:freerad /etc/freeradius/3.0/certs/pki-lab
 ```
 
 Make the key unreadable to everyone else:
 
 ```sh title="terminal"
-sudo chmod 640 /etc/freeradius/3.0/certs/pki-fun/radius.key
+sudo chmod 640 /etc/freeradius/3.0/certs/pki-lab/radius.key
 ```
 
 ## 5. Configure the EAP module
@@ -198,9 +202,9 @@ Make five changes. Each line already exists in the file.
 |---|---|---|
 | `default_eap_type` (first one, near the top) | `tls` | Offer EAP-TLS first. |
 | `private_key_password = whatever` | comment it out with `#` | step keys on disk aren't encrypted here. |
-| `private_key_file` | `${certdir}/pki-fun/radius.key` | The server's private key. |
-| `certificate_file` | `${certdir}/pki-fun/radius.crt` | The server certificate. step already put the intermediate in it. |
-| `ca_file` | `${certdir}/pki-fun/root_ca.crt` | The **only** CA allowed to issue client certificates. |
+| `private_key_file` | `${certdir}/pki-lab/radius.key` | The server's private key. |
+| `certificate_file` | `${certdir}/pki-lab/radius.crt` | The server certificate. step already put the intermediate in it. |
+| `ca_file` | `${certdir}/pki-lab/root_ca.crt` | The **only** CA allowed to issue client certificates. |
 
 :::danger[Never trust the system CA bundle here]
 The shipped config points `ca_file` at the operating system's public CA bundle. That means anyone with a certificate from any public CA could join your network. The FreeRADIUS comments warn about this too. Always use a dedicated private root.
@@ -223,7 +227,7 @@ sudo freeradius -X
 ```
 
 ```text title="Expected output (last lines)"
-Listening on proxy address * port 41554
+Listening on proxy address * port 42839
 Ready to process requests
 ```
 
@@ -233,7 +237,7 @@ Leave it running. Debug mode prints every step of every request. It's the best E
 
 `eapol_test` is a test build of the same supplicant Linux uses for Wi-Fi. It talks RADIUS directly, so it plays the device **and** the access point.
 
-Open a new terminal in `~/pki-fun-lab/eap`. Create the supplicant config:
+Open a new terminal in `~/pki-lab/eap`. Create the supplicant config:
 
 ```text title="eaptls.conf"
 network={
@@ -260,9 +264,9 @@ eapol_test -c eaptls.conf -a 127.0.0.1 -s testing123
 ```text title="Expected output (excerpt)"
 CTRL-EVENT-EAP-STARTED EAP authentication started
 CTRL-EVENT-EAP-METHOD EAP vendor 0 method 13 (TLS) selected
-CTRL-EVENT-EAP-PEER-CERT depth=2 subject='/O=pki.fun Lab/CN=pki.fun Lab Root CA' hash=cdeac1592a2a82ee9e76cdf453c015da1109401084d3cb96692c23dc708f04b0
-CTRL-EVENT-EAP-PEER-CERT depth=1 subject='/O=pki.fun Lab/CN=pki.fun Lab Intermediate CA' hash=a9a83a1b2209dd9376d4a89619b271e66f43e6110eff268fed1a618e1dbc7da9
-CTRL-EVENT-EAP-PEER-CERT depth=0 subject='/CN=radius.example.com' hash=01ff229b9c6a7d077efd81111d578f013904b59525535f729e3c9b3a2204c35c
+CTRL-EVENT-EAP-PEER-CERT depth=2 subject='/O=Lab CA/CN=Lab CA Root CA' hash=0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
+CTRL-EVENT-EAP-PEER-CERT depth=1 subject='/O=Lab CA/CN=Lab CA Intermediate CA' hash=fec784d7112b3a5467c43a95a970589d2cd085f59e859e8f498479c197006c6b
+CTRL-EVENT-EAP-PEER-CERT depth=0 subject='/CN=radius.example.com' hash=a542894cc27f892f748dda5756bd9f6360a5311aec74657e5362641708bf16d7
 CTRL-EVENT-EAP-PEER-ALT depth=0 DNS:radius.example.com
 CTRL-EVENT-EAP-SUCCESS EAP authentication completed successfully
 ...
@@ -275,13 +279,13 @@ Read it from the laptop's point of view. It checked the server's chain to your r
 Now look at the FreeRADIUS terminal:
 
 ```text title="FreeRADIUS debug output (excerpt)"
-(3) eap_tls:   TLS-Client-Cert-Serial := "257acc5775e231cac7fa3ed28bb1138e"
+(3) eap_tls:   TLS-Client-Cert-Serial := "c5ef56b76aac228f0fa5fb8e820047ee"
 (3) eap_tls:   TLS-Client-Cert-Subject := "/CN=alice@example.com"
-(3) eap_tls:   TLS-Client-Cert-Issuer := "/O=pki.fun Lab/CN=pki.fun Lab Intermediate CA"
+(3) eap_tls:   TLS-Client-Cert-Issuer := "/O=Lab CA/CN=Lab CA Intermediate CA"
 (3) eap_tls:   TLS-Client-Cert-Subject-Alt-Name-Email := "alice@example.com"
 (3) eap_tls:   TLS-Client-Cert-X509v3-Extended-Key-Usage += "TLS Web Client Authentication"
 ...
-(4) Sent Access-Accept Id 4 from 127.0.0.1:1812 to 127.0.0.1:50750 length 173
+(4) Sent Access-Accept Id 4 from 127.0.0.1:1812 to 127.0.0.1:42326 length 173
 ```
 
 FreeRADIUS turned the certificate into attributes. A real deployment uses them in policy, for example to put a device on the right VLAN.
@@ -350,8 +354,8 @@ eapol_test -c otherca.conf -a 127.0.0.1 -s testing123
 FreeRADIUS logs:
 
 ```text title="FreeRADIUS debug output (excerpt)"
-(10) eap_tls:   ERROR: (TLS) OpenSSL says error 20 : unable to get local issuer certificate
-(10) eap_tls: ERROR: (TLS) TLS - Alert write:fatal:unknown CA
+(17) eap_tls:   ERROR: (TLS) OpenSSL says error 20 : unable to get local issuer certificate
+(17) eap_tls: ERROR: (TLS) TLS - Alert write:fatal:unknown CA
 ```
 
 ### A server certificate used as a client
@@ -367,8 +371,8 @@ eapol_test -c servercert.conf -a 127.0.0.1 -s testing123
 ```
 
 ```text title="FreeRADIUS debug output (excerpt)"
-(17) eap_tls:   ERROR: (TLS) OpenSSL says error 26 : unsuitable certificate purpose
-(17) eap_tls: ERROR: (TLS) TLS - Alert write:fatal:unsupported certificate
+(21) eap_tls:   ERROR: (TLS) OpenSSL says error 26 : unsuitable certificate purpose
+(21) eap_tls: ERROR: (TLS) TLS - Alert write:fatal:unsupported certificate
 ```
 
 The signature is valid, but the EKU says `serverAuth` only. This is why the strict template in step 2 matters.
@@ -386,11 +390,11 @@ eapol_test -c realm.conf -a 127.0.0.1 -s testing123
 ```
 
 ```text title="FreeRADIUS debug output (excerpt)"
-(18) suffix: Looking up realm "example.com" for User-Name = "alice@example.com"
-(18) suffix: Found realm "example.com"
-(18) suffix: Proxying request from user alice to realm example.com
+(22) suffix: Looking up realm "example.com" for User-Name = "alice@example.com"
+(22) suffix: Found realm "example.com"
+(22) suffix: Proxying request from user alice to realm example.com
 ...
-(18) eap: Request is supposed to be proxied to Realm example.com. Not doing EAP.
+(22) eap: Request is supposed to be proxied to Realm example.com. Not doing EAP.
 ```
 
 The sample `proxy.conf` defines a realm called `example.com`, so FreeRADIUS forwards the request instead of handling it. Real deployments use realms to route users between organisations, as eduroam does. Know where your identities go.

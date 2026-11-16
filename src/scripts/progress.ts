@@ -9,7 +9,8 @@
  * - `button[data-mark-complete]`  toggles the lesson named in its value.
  */
 
-const KEY = 'pki.fun:progress';
+// localStorage is already per-origin, so the key needs no site name.
+const KEY = 'lesson-progress';
 const EVENT = 'pf-progress';
 
 function read(): string[] {

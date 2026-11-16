@@ -39,8 +39,8 @@ SSH certificates replace both lists with two CA keys:
 
 An SSH certificate is not X.509. It's a public key plus a few fields, signed by the CA key: a key ID, a serial, **principals** (allowed login names or host names), a validity window and a few options.
 
-:::note[This lab needs a Linux SSH server]
-You'll run a second copy of `sshd` on port 2222, so your normal SSH server isn't touched. Use Linux or WSL with `openssh-server` installed. The client side works on macOS too.
+:::note[Use the lab VM]
+You'll run a second copy of `sshd` on port 2222, so the VM's normal SSH server isn't touched. The VM plays both the laptop and the server. On a host install, use Linux or WSL with `openssh-server` installed.
 :::
 
 ## 1. Give your CA SSH keys
@@ -54,8 +54,8 @@ step crypto keypair $(step path)/certs/ssh_host_ca_key.pub $(step path)/secrets/
 ```
 
 ```text title="Expected output"
-Your public key has been saved in /home/you/.step/certs/ssh_host_ca_key.pub.
-Your private key has been saved in /home/you/.step/secrets/ssh_host_ca_key.
+Your public key has been saved in /home/ubuntu/.step/certs/ssh_host_ca_key.pub.
+Your private key has been saved in /home/ubuntu/.step/secrets/ssh_host_ca_key.
 ```
 
 Create the user CA key pair the same way:
@@ -68,12 +68,12 @@ step crypto keypair $(step path)/certs/ssh_user_ca_key.pub $(step path)/secrets/
 step-ca can unlock all its keys with one password at startup. Use your CA password for both SSH keys.
 :::
 
-Open `$(step path)/config/ca.json`. Add this block at the top level, next to `"db"`. Replace `/home/you` with your home folder:
+Open `$(step path)/config/ca.json`. Add this block at the top level, next to `"db"`. On a host install, replace `/home/ubuntu` with your home folder:
 
 ```json title="ca.json (excerpt)"
 "ssh": {
-	"hostKey": "/home/you/.step/secrets/ssh_host_ca_key",
-	"userKey": "/home/you/.step/secrets/ssh_user_ca_key"
+	"hostKey": "/home/ubuntu/.step/secrets/ssh_host_ca_key",
+	"userKey": "/home/ubuntu/.step/secrets/ssh_user_ca_key"
 },
 ```
 
@@ -84,7 +84,7 @@ step ca provisioner update admin@example.com --ssh
 ```
 
 ```text title="Expected output"
-✔ CA Configuration: /home/you/.step/config/ca.json
+✔ CA Configuration: /home/ubuntu/.step/config/ca.json
 
 Success! Your `step-ca` config has been updated. To pick up the new configuration SIGHUP (kill -1 <pid>) or restart the step-ca process.
 ```
@@ -96,7 +96,7 @@ step ssh config --roots
 ```
 
 ```text title="Expected output"
-ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCWAbQFTB4Gj3DTgzm3RWN/srdceomwByUTEHncSPi+9PRdRzbER2L5hQ4c8jvEhUzdE7CJJF2ykKKIlQx1AadA=
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJNE72/yogyhdZedsQrzNzCiqbhZQgDNkq1EtcaGYiBWwlSSZv6ne8NioCzBYiP88M3Fo9NL5C9lkp5CAiuu0uU=
 ```
 
 That's the **user** CA public key. `step ssh config --host --roots` prints the host CA key.
@@ -116,7 +116,7 @@ sudo step ssh certificate --host --sign \
 `--sign` means "sign this existing public key", so no new key is made. `--ca-url` and `--root` matter because `sudo` runs as root, which has no step config of its own.
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
 ✔ CA: https://localhost:9000
 ✔ Certificate: /etc/ssh/ssh_host_ecdsa_key-cert.pub
 ```
@@ -131,10 +131,10 @@ ssh-keygen -L -f /etc/ssh/ssh_host_ecdsa_key-cert.pub
 /etc/ssh/ssh_host_ecdsa_key-cert.pub:
         Type: ecdsa-sha2-nistp256-cert-v01@openssh.com host certificate
         Public key: ECDSA-CERT SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic
-        Signing CA: ECDSA SHA256:Ac/aovljhIEACbjpZg2FDwSuczABBm9DbMSgyXxI2Oo (using ecdsa-sha2-nistp256)
+        Signing CA: ECDSA SHA256:V5d2k/Mh8hZQsv+5vCeQdlrG1/z5tYGmsVTczWGLKx0 (using ecdsa-sha2-nistp256)
         Key ID: "host.example.com"
-        Serial: 1958076320432791810
-        Valid: from 2026-11-12T12:08:44 to 2026-12-12T12:09:44
+        Serial: 14565824590151446183
+        Valid: from 2026-11-16T04:03:48 to 2026-12-16T04:04:48
         Principals: 
                 localhost
                 host.example.com
@@ -152,14 +152,12 @@ Save the user CA key where sshd can read it:
 step ssh config --roots | sudo tee /etc/ssh/ssh_user_ca.pub
 ```
 
-{/* UNVERIFIED: the separate config file, `sshd -t -f`, `-f` start and PID-file stop were checked with `sshd -T` on OpenSSH 9.9 (macOS), not run on Ubuntu 24.04. */}
-
 Create a config file for the lab. Keep it out of `/etc/ssh/sshd_config.d/`, because your normal SSH server reads every file there:
 
-```text title="/etc/ssh/pki-fun-sshd.conf"
+```text title="/etc/ssh/pki-lab-sshd.conf"
 TrustedUserCAKeys /etc/ssh/ssh_user_ca.pub
 HostCertificate /etc/ssh/ssh_host_ecdsa_key-cert.pub
-PidFile /run/sshd-pki-fun.pid
+PidFile /run/sshd-pki-lab.pid
 Include /etc/ssh/sshd_config
 ```
 
@@ -173,17 +171,19 @@ Only the lab server loads this file, so your normal SSH server never trusts the 
 Test the config:
 
 ```sh title="terminal"
-sudo sshd -t -f /etc/ssh/pki-fun-sshd.conf && echo "sshd config OK"
+sudo sshd -t -f /etc/ssh/pki-lab-sshd.conf && echo "sshd config OK"
 ```
 
 ```text title="Expected output"
 sshd config OK
 ```
 
+On a host install, you might see `Missing privilege separation directory: /run/sshd` instead. Create the folder with `sudo mkdir -p /run/sshd`, then test again. The lab VM creates it at boot.
+
 Start a second sshd on port 2222 with the lab config:
 
 ```sh title="terminal"
-sudo /usr/sbin/sshd -f /etc/ssh/pki-fun-sshd.conf -p 2222
+sudo /usr/sbin/sshd -f /etc/ssh/pki-lab-sshd.conf -p 2222
 ```
 
 Create a local account for Alice to log in to:
@@ -205,11 +205,11 @@ step ssh certificate alice@example.com ~/.ssh/id_ecdsa
 Choose a password for the new private key, then enter the provisioner password.
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: x7bd7CXxCEOm_9Xd8fWDfvDb77NfYYYTo3YHiVJtw9U]
+✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
 ✔ CA: https://localhost:9000
-✔ Private Key: /home/you/.ssh/id_ecdsa
-✔ Public Key: /home/you/.ssh/id_ecdsa.pub
-✔ Certificate: /home/you/.ssh/id_ecdsa-cert.pub
+✔ Private Key: /home/ubuntu/.ssh/id_ecdsa
+✔ Public Key: /home/ubuntu/.ssh/id_ecdsa.pub
+✔ Certificate: /home/ubuntu/.ssh/id_ecdsa-cert.pub
 ✔ SSH Agent: yes
 ```
 
@@ -222,13 +222,13 @@ ssh-keygen -L -f ~/.ssh/id_ecdsa-cert.pub
 ```
 
 ```text title="Expected output"
-/home/you/.ssh/id_ecdsa-cert.pub:
+/home/ubuntu/.ssh/id_ecdsa-cert.pub:
         Type: ecdsa-sha2-nistp256-cert-v01@openssh.com user certificate
-        Public key: ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
-        Signing CA: ECDSA SHA256:gey2nyVNeqqzb4WG9jHVdz6Zb4TZsXXO4fRmy1M1dQE (using ecdsa-sha2-nistp256)
+        Public key: ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
+        Signing CA: ECDSA SHA256:EIcXDAfDg6cm9wkLx2vr70NIgDt53MsMW6uYOQfLgtw (using ecdsa-sha2-nistp256)
         Key ID: "alice@example.com"
-        Serial: 696438274679778010
-        Valid: from 2026-11-12T12:08:44 to 2026-11-13T04:09:44
+        Serial: 9167219149753294453
+        Valid: from 2026-11-16T04:03:49 to 2026-11-16T20:04:49
         Principals: 
                 alice
                 alice@example.com
@@ -266,7 +266,7 @@ ssh -p 2222 alice@localhost whoami
 ssh asks for your key's passphrase. That unlocks the key on your laptop. It is not a server password.
 
 ```text title="Expected output"
-Enter passphrase for key '/home/you/.ssh/id_ecdsa':
+Enter passphrase for key '/home/ubuntu/.ssh/id_ecdsa':
 alice
 ```
 
@@ -279,12 +279,12 @@ ssh -v -p 2222 alice@localhost whoami
 ```
 
 ```text title="Expected output (excerpt)"
-debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic, serial 1958076320432791810 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:Ac/aovljhIEACbjpZg2FDwSuczABBm9DbMSgyXxI2Oo valid from 2026-11-12T12:08:44 to 2026-12-12T12:09:44
+debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic, serial 14565824590151446183 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:V5d2k/Mh8hZQsv+5vCeQdlrG1/z5tYGmsVTczWGLKx0 valid from 2026-11-16T04:03:48 to 2026-12-16T04:04:48
 debug1: Host '[localhost]:2222' is known and matches the ECDSA-CERT host certificate.
-debug1: Found CA key in /home/you/.ssh/known_hosts:1
+debug1: Found CA key in /home/ubuntu/.ssh/known_hosts:1
 ...
-debug1: Offering public key: /home/you/.ssh/id_ecdsa ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
-debug1: Server accepts key: /home/you/.ssh/id_ecdsa ECDSA-CERT SHA256:lilG0LM9g1g5gKHvxgA/mR1KRuf/JGH3oW61uW/2Ovw
+debug1: Offering public key: /home/ubuntu/.ssh/id_ecdsa ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
+debug1: Server accepts key: /home/ubuntu/.ssh/id_ecdsa ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
 ```
 
 The first two lines are the host check. The last two are the user check.
@@ -348,13 +348,13 @@ The host certificate only helps clients that trust the host CA. Put the line bac
 Stop the lab sshd, using its PID file:
 
 ```sh title="terminal"
-sudo kill $(cat /run/sshd-pki-fun.pid)
+sudo kill $(cat /run/sshd-pki-lab.pid)
 ```
 
 Remove its config:
 
 ```sh title="terminal"
-sudo rm /etc/ssh/pki-fun-sshd.conf
+sudo rm /etc/ssh/pki-lab-sshd.conf
 ```
 
 ## Go deeper
