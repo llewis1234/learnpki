@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve pki.fun. Contributions should keep the course hands-on, accurate, and accessible to learners who know basic Linux and Docker but are new to PKI.
+Thanks for helping improve Learn PKI. Contributions should keep the course hands-on, accurate, and accessible to learners who know basic Linux and Docker but are new to PKI.
 
 ## Before you contribute
 

@@ -1,4 +1,4 @@
-# pki.fun agent rules
+# Learn PKI agent rules
 
 ## Brand and tone
 

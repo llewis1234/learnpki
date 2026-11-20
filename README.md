@@ -1,6 +1,6 @@
-# pki.fun
+# Learn PKI
 
-pki.fun is a free, open-source place to learn certificate technologies by building them. Short explanations pair with hands-on labs that use open-source tools: the step CLI and step-ca, OpenSSL, nginx, FreeRADIUS and curl.
+Learn PKI ([learnpki.com](https://learnpki.com)) is a free, open-source place to learn certificate technologies by building them. Short explanations pair with hands-on labs that use open-source tools: the step CLI and step-ca, OpenSSL, nginx, FreeRADIUS and curl.
 
 The Learning Path has eight modules:
 
@@ -32,7 +32,7 @@ The build also checks internal Markdown and MDX links.
 
 ## Project status
 
-All eight modules have full lessons with hands-on labs. The labs were tested on Ubuntu 24.04 with the versions in `labs/versions.env`. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to `https://pki.fun`.
+All eight modules have full lessons with hands-on labs. The labs were tested on Ubuntu 24.04 with the versions in `labs/versions.env`. The site is built with [Astro Starlight](https://starlight.astro.build) and deploys to [learnpki.com](https://learnpki.com). The site URL and brand name live in `site.config.mjs`.
 
 ## Licenses
 
@@ -40,4 +40,4 @@ Code and lab files are licensed under Apache-2.0. Lesson text is licensed under 
 
 ## Disclaimer
 
-pki.fun is an independent project. It is not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.
+Learn PKI is an independent project. It is not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.
