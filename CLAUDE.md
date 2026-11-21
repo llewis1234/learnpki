@@ -20,7 +20,8 @@
 - Lessons live in `src/content/docs/guides/` and are ordered by the `module` frontmatter field. Each lesson sets `module`, `summary`, `topic` (PKI, mTLS, EAP-TLS, ACME, SSH, Tools), `level`, `minutes`, a numbered `sidebar.label`, and optional `cards` (flip cards) and `outline: true`.
 - When adding a lesson, also add its slug to the `lessons` list in `astro.config.mjs`.
 - Use `.mdx` when a lesson needs `<Diagram kind="chain|mtls|eaptls" />`; otherwise `.md`.
-- Glossary terms live in `src/data/glossary.ts`.
+- Glossary terms live in `src/data/glossary.ts`. Each term has an anchor ID from `termId()`, so lessons can link to `/glossary/#<id>`.
+- Social preview images live in `public/og/`. Run `npm run og` after you change a lesson's title, topic, level or minutes, or `SITE_NAME` or `SITE_URL`, then commit the PNG files. `src/routeData.ts` adds the image tags and the JSON-LD data.
 
 ## Lab rules
 
@@ -30,6 +31,8 @@
 - Pin tool versions in `labs/versions.env` and state them in Lab Setup and lessons.
 - Use real passwords in lesson instructions. Any `--no-password`, `--password-file` or `--insecure` flags in scripts must have a nearby comment that says they are for CI only.
 - Verify every command and flag against the pinned tool or its official documentation. Never invent output; run commands to capture it.
+- `labs/run-all.sh` runs every lab command in order and marks each output block (`<lesson>:<n>`, the n-th output block in the lesson). When you add, remove or reorder an output block, update the script to match. `labs/refresh-output.py run.log` copies a run's output into the lessons, so all output comes from one run.
+- Each module that changes system files ends with a "Clean up" section. Module 6 uses port 9443, so it never meets module 4's nginx site on 8443.
 
 ## Writing rules
 

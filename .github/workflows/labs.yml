@@ -1,0 +1,53 @@
+name: Run labs
+
+# Runs every lab command in modules 1 to 8 on a clean Ubuntu 24.04 machine,
+# with the same tools as the lab VM. It fails when a command no longer behaves
+# the way a lesson describes, for example after a tool update.
+
+on:
+  schedule:
+    - cron: '17 6 * * 1' # Mondays, 06:17 UTC
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'src/content/docs/guides/**'
+      - 'labs/**'
+      - 'public/lab/**'
+
+jobs:
+  labs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install the lab tools, as the lab VM does
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y \
+            curl jq openssl nginx freeradius eapoltest openssh-server python3-yaml
+          # Use the pinned, hash-checked step install script from the lab VM's cloud-init file.
+          python3 - <<'EOF'
+          import yaml
+          data = yaml.safe_load(open('public/lab/cloud-init.yaml'))
+          script = next(f for f in data['write_files'] if f['path'] == '/usr/local/sbin/pki-lab-install-step')
+          open('/tmp/pki-lab-install-step', 'w').write(script['content'])
+          EOF
+          sudo bash /tmp/pki-lab-install-step
+          sudo snap install --classic certbot
+          sudo systemctl disable --now freeradius
+          sudo rm -f /etc/nginx/sites-enabled/default
+          sudo systemctl restart nginx
+          sudo mkdir -p /run/sshd
+
+      - name: Run every lab
+        run: |
+          set -o pipefail
+          bash labs/run-all.sh | tee run.log
+
+      - name: Keep the run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lab-run-log
+          path: run.log

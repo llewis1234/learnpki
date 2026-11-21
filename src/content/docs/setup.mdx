@@ -201,21 +201,46 @@ You can skip the VM and install the tools directly. The lesson commands are the 
 <Tabs syncKey="host">
 <TabItem label="Linux (Debian/Ubuntu)">
 
-Download and install the step CLI package:
+Download the step CLI and step-ca packages:
 
 ```sh title="terminal"
 wget https://github.com/smallstep/cli/releases/download/v0.31.0/step-cli_0.31.0-1_amd64.deb
-sudo dpkg -i step-cli_0.31.0-1_amd64.deb
 ```
-
-Download and install the step-ca package:
 
 ```sh title="terminal"
 wget https://github.com/smallstep/certificates/releases/download/v0.30.2/step-ca_0.30.2-1_amd64.deb
-sudo dpkg -i step-ca_0.30.2-1_amd64.deb
 ```
 
-On ARM machines, swap `amd64` for `arm64` in both file names.
+Check that the files are the real releases. Compare their SHA-256 hashes with the published ones:
+
+```sh title="terminal"
+sha256sum -c <<'EOF'
+dbea61cba1854e07625d8f064d83441c7f9232edd9440bc08a78614dcc8232fc  step-cli_0.31.0-1_amd64.deb
+f8e43f0f2ba1e37121b75623993ea0bece5cc3a02b73eefc16e414d41c9fec71  step-ca_0.30.2-1_amd64.deb
+EOF
+```
+
+```text title="Expected output"
+step-cli_0.31.0-1_amd64.deb: OK
+step-ca_0.30.2-1_amd64.deb: OK
+```
+
+If a line says `FAILED`, delete the file and download it again. Don't install it.
+
+Install both packages. `apt` also installs any packages they depend on:
+
+```sh title="terminal"
+sudo apt install -y ./step-cli_0.31.0-1_amd64.deb ./step-ca_0.30.2-1_amd64.deb
+```
+
+On ARM machines, swap `amd64` for `arm64` in the file names, and use these hashes:
+
+| File | SHA-256 |
+|---|---|
+| `step-cli_0.31.0-1_arm64.deb` | `04e93161210667587e5f5c966a46ce09b15a7acca9c1b263fd0d639be72ba670` |
+| `step-ca_0.30.2-1_arm64.deb` | `31faf820c64a8365081fd25d6e37b5b5ece0ae2f1e136ae41a639606e63cf8a7` |
+
+The hashes come from each release's `checksums.txt` file on GitHub: [step CLI](https://github.com/smallstep/cli/releases/tag/v0.31.0) and [step-ca](https://github.com/smallstep/certificates/releases/tag/v0.30.2).
 
 Install the remaining tools from your distribution:
 

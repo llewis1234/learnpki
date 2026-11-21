@@ -31,7 +31,7 @@ Three things happen when you run `step ca certificate`:
 
 1. **step makes a key pair on your machine.** The private key never leaves your computer. The CA never sees it.
 2. **step builds a CSR.** A **certificate signing request** holds your new public key and the names you want. step signs it with the new private key, which proves you hold that key.
-3. **The CA checks your right to ask.** Your **provisioner** password unlocks a short-lived token. The CA checks the token, signs the certificate and sends it back.
+3. **The CA checks your right to ask.** Your **provisioner** password decrypts the provisioner's private key. step uses that key to sign a short-lived, one-time token. The CA checks the token, signs the certificate and sends it back.
 
 That split is the point. The CA vouches for the public key. Only you hold the private key.
 
@@ -54,7 +54,7 @@ step certificate fingerprint $(step path)/certs/root_ca.crt
 ```
 
 ```text title="Expected output"
-0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
+d52aa29d04fcb25bcd6c27a6c51d2b8bd12ccd94d8ff3740594b3dba6d8999d8
 ```
 
 Your fingerprint is different. Use yours in the next step.
@@ -90,7 +90,7 @@ step ca certificate web.example.com web.crt web.key \
 Enter the provisioner password when asked.
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
+✔ Provisioner: admin@example.com (JWK) [kid: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c]
 ✔ CA: https://localhost:9000
 ✔ Certificate: web.crt
 ✔ Private Key: web.key
@@ -105,14 +105,14 @@ step certificate inspect web.crt --short
 ```
 
 ```text title="Expected output"
-X.509v3 TLS Certificate (ECDSA P-256) [Serial: 3354...0265]
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 2834...8861]
   Subject:     web.example.com
                localhost
                127.0.0.1
   Issuer:      Lab CA Intermediate CA
-  Provisioner: admin@example.com [ID: Cd7t...AS_E]
-  Valid from:  2026-11-16T03:57:38Z
-          to:  2026-11-17T03:58:38Z
+  Provisioner: admin@example.com [ID: g1zy...bX4c]
+  Valid from:  2026-11-21T02:20:54Z
+          to:  2026-11-22T02:21:54Z
 ```
 
 Two details are worth a look:
@@ -130,12 +130,12 @@ step certificate inspect web.crt
 Certificate:
     Data:
         Version: 3 (0x2)
-        Serial Number: 335496621798848314673034230938666930265 (0xfc664c8c5552ce773eca4b6759b61059)
+        Serial Number: 283406764623439883476110414419937768861 (0xd536284e2f88bc876e3d1c394548b59d)
         Signature Algorithm: ECDSA-SHA256
         Issuer: O=Lab CA,CN=Lab CA Intermediate CA
         Validity
-            Not Before: Nov 16 03:57:38 2026 UTC
-            Not After : Nov 17 03:58:38 2026 UTC
+            Not Before: Nov 21 02:20:54 2026 UTC
+            Not After : Nov 22 02:21:54 2026 UTC
         Subject: CN=web.example.com
         Subject Public Key Info:
             Public Key Algorithm: ECDSA
@@ -148,16 +148,16 @@ Certificate:
             X509v3 Extended Key Usage:
                 Server Authentication, Client Authentication
             X509v3 Subject Key Identifier:
-                1D:0C:70:2A:2D:99:82:95:9D:36:85:4C:2E:F7:B8:1A:41:BF:64:97
+                67:3F:7E:D2:20:5A:09:E1:99:3A:56:B7:1E:3A:36:18:21:EA:00:E0
             X509v3 Authority Key Identifier:
-                1B:7A:83:36:88:1C:E2:E6:78:50:0A:39:5F:5D:68:AC:A5:7F:9B:F0
+                6A:05:DB:E1:69:68:35:D9:92:6F:2F:6B:D5:55:29:8C:9E:C5:A8:81
             X509v3 Subject Alternative Name:
                 DNS:web.example.com, DNS:localhost
                 IP Address:127.0.0.1
             X509v3 Step Provisioner:
                 Type: JWK
                 Name: admin@example.com
-                CredentialID: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E
+                CredentialID: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c
     Signature Algorithm: ECDSA-SHA256
     ...
 ```
@@ -197,24 +197,24 @@ step certificate inspect web.crt --bundle --short
 ```
 
 ```text title="Expected output"
-X.509v3 TLS Certificate (ECDSA P-256) [Serial: 3354...0265]
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 2834...8861]
   Subject:     web.example.com
                localhost
                127.0.0.1
   Issuer:      Lab CA Intermediate CA
-  Provisioner: admin@example.com [ID: Cd7t...AS_E]
-  Valid from:  2026-11-16T03:57:38Z
-          to:  2026-11-17T03:58:38Z
-X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1455...6432]
+  Provisioner: admin@example.com [ID: g1zy...bX4c]
+  Valid from:  2026-11-21T02:20:54Z
+          to:  2026-11-22T02:21:54Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 2335...3737]
   Subject:     Lab CA Intermediate CA
   Issuer:      Lab CA Root CA
-  Valid from:  2026-11-16T03:58:14Z
-          to:  2036-11-13T03:58:14Z
+  Valid from:  2026-11-21T02:21:53Z
+          to:  2036-11-18T02:21:53Z
 ```
 
 Read it top to bottom. Each issuer is the subject of the next certificate. That is the chain.
 
-<Diagram kind="chain" />
+<Diagram kind="chain" leaf="web.example.com" />
 
 ## 7. Cross-check with OpenSSL
 
@@ -227,8 +227,8 @@ openssl x509 -in web.crt -noout -subject -issuer -dates -ext subjectAltName,exte
 ```text title="Expected output"
 subject=CN = web.example.com
 issuer=O = Lab CA, CN = Lab CA Intermediate CA
-notBefore=Nov 16 03:57:38 2026 GMT
-notAfter=Nov 17 03:58:38 2026 GMT
+notBefore=Nov 21 02:20:54 2026 GMT
+notAfter=Nov 22 02:21:54 2026 GMT
 X509v3 Extended Key Usage: 
     TLS Web Server Authentication, TLS Web Client Authentication
 X509v3 Subject Alternative Name: 
@@ -248,7 +248,7 @@ step ca certificate alice@example.com alice.crt alice.key
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
+✔ Provisioner: admin@example.com (JWK) [kid: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c]
 ✔ CA: https://localhost:9000
 ✔ Certificate: alice.crt
 ✔ Private Key: alice.key
@@ -281,8 +281,8 @@ step crypto key public web.key
 
 ```text title="Expected output (both commands)"
 -----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEhOHHmMiJjgHx6dizo1kfWtqfWZcp
-+MfAapuz67cF1vCcVbBiJV4+XTCI03UixNs7OGZhX3mmxzwgCZmlkXCzhw==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEl4pcR99UTcCn2cX27vmFxjqLUyy4
+w73BjYE3JKPYKVw5oKDGuHvfToEQLR7IfCn5sW6nTS8uCfwAG0IR7089RQ==
 -----END PUBLIC KEY-----
 ```
 
@@ -375,7 +375,7 @@ step ca certificate api.example.com api.crt api.key --not-after 48h
 ```
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
+✔ Provisioner: admin@example.com (JWK) [kid: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c]
 ✔ CA: https://localhost:9000
 The request was forbidden by the certificate authority: requested duration of 48h1m0s is more than the authorized maximum certificate duration of 24h1m0s.
 Re-run with STEPDEBUG=1 for more info.

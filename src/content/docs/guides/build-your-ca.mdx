@@ -52,7 +52,7 @@ Generating intermediate certificate... done!
 
 ✔ Root certificate: /home/ubuntu/.step/certs/root_ca.crt
 ✔ Root private key: /home/ubuntu/.step/secrets/root_ca_key
-✔ Root fingerprint: 0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
+✔ Root fingerprint: d52aa29d04fcb25bcd6c27a6c51d2b8bd12ccd94d8ff3740594b3dba6d8999d8
 ✔ Intermediate certificate: /home/ubuntu/.step/certs/intermediate_ca.crt
 ✔ Intermediate private key: /home/ubuntu/.step/secrets/intermediate_ca_key
 ✔ Database folder: /home/ubuntu/.step/db
@@ -100,7 +100,7 @@ Starting Smallstep CA/0.30.2 (linux/amd64)
 Config file: /home/ubuntu/.step/config/ca.json
 The primary server URL is https://localhost:9000
 Root certificates are available at https://localhost:9000/roots.pem
-X.509 Root Fingerprint: 0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
+X.509 Root Fingerprint: d52aa29d04fcb25bcd6c27a6c51d2b8bd12ccd94d8ff3740594b3dba6d8999d8
 Serving HTTPS on 127.0.0.1:9000 ...
 ```
 
@@ -127,11 +127,11 @@ step certificate inspect $(step path)/certs/root_ca.crt --short
 ```
 
 ```text title="Expected output"
-X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 2015...2654]
+X.509v3 Root CA Certificate (ECDSA P-256) [Serial: 1946...2386]
   Subject:     Lab CA Root CA
   Issuer:      Lab CA Root CA
-  Valid from:  2026-11-16T03:58:13Z
-          to:  2036-11-13T03:58:13Z
+  Valid from:  2026-11-21T02:21:52Z
+          to:  2036-11-18T02:21:52Z
 ```
 
 Notice the Subject and Issuer are the same — that's what makes it a self-signed root. It's valid for 10 years. Your serial number and dates will differ.

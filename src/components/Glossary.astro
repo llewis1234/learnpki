@@ -1,5 +1,5 @@
 ---
-import { glossary } from '../data/glossary';
+import { glossary, termId } from '../data/glossary';
 
 const terms = [...glossary].sort((a, b) => a.term.localeCompare(b.term));
 ---
@@ -12,8 +12,10 @@ const terms = [...glossary].sort((a, b) => a.term.localeCompare(b.term));
 	<dl>
 		{
 			terms.map((t) => (
-				<div class="entry pf-card" data-search={`${t.term} ${t.def}`.toLowerCase()}>
-					<dt>{t.term}</dt>
+				<div class="entry pf-card" id={termId(t.term)} data-search={`${t.term} ${t.def}`.toLowerCase()}>
+					<dt>
+						<a class="term-link" href={`#${termId(t.term)}`}>{t.term}</a>
+					</dt>
 					<dd>{t.def}</dd>
 				</div>
 			))
@@ -78,6 +80,21 @@ const terms = [...glossary].sort((a, b) => a.term.localeCompare(b.term));
 		font-family: var(--pf-font-display);
 		font-weight: 600;
 		color: var(--sl-color-white);
+	}
+	.term-link {
+		color: inherit;
+		text-decoration: none;
+	}
+	.term-link:hover,
+	.term-link:focus-visible {
+		text-decoration: underline;
+	}
+	.entry {
+		scroll-margin-top: calc(var(--sl-nav-height) + 1rem);
+	}
+	.entry:target {
+		outline: 2px solid var(--pf-primary);
+		outline-offset: 2px;
 	}
 	dd {
 		margin: 0.25rem 0 0;

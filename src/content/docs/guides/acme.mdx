@@ -119,7 +119,7 @@ Requesting a certificate for localhost
 Successfully received certificate.
 Certificate is saved at: /etc/letsencrypt/live/localhost/fullchain.pem
 Key is saved at:         /etc/letsencrypt/live/localhost/privkey.pem
-This certificate expires on 2026-11-17.
+This certificate expires on 2026-11-22.
 These files will be updated when the certificate renews.
 ...
 ```
@@ -133,7 +133,7 @@ On a host install, nginx's default site holds port 80. certbot then stops with t
 Could not bind TCP port 80 because it is already in use by another process on this system (such as a web server). Please stop the program in question and then try again.
 ```
 
-Turn off the default site, then reload nginx. Your mTLS server from [module 4](/guides/mtls-nginx/) keeps running on port 8443:
+Turn off the default site, then reload nginx:
 
 ```sh title="terminal"
 sudo rm /etc/nginx/sites-enabled/default && sudo nginx -s reload
@@ -151,12 +151,12 @@ GET  /acme/acme/directory
 HEAD /acme/acme/new-nonce
 POST /acme/acme/new-account
 POST /acme/acme/new-order
-POST /acme/acme/authz/JXYImV8Mu0v9OLB0AfF82WTs2F9DSlRH
-POST /acme/acme/challenge/JXYImV8Mu0v9OLB0AfF82WTs2F9DSlRH/IrPS2PfK10VxSLra6hXa8pbg2UhcAC6l
-POST /acme/acme/authz/JXYImV8Mu0v9OLB0AfF82WTs2F9DSlRH
-POST /acme/acme/order/KVIg8iYkMa6y7G7pvwVYUzaczjo2ldhx/finalize
-POST /acme/acme/order/KVIg8iYkMa6y7G7pvwVYUzaczjo2ldhx
-POST /acme/acme/certificate/tpTDFPIdXPtuA7hr3I8cLMID4cdP0DTX
+POST /acme/acme/authz/QSp1jwzbMy0pny57WFhIVcGol6AYbaaG
+POST /acme/acme/challenge/QSp1jwzbMy0pny57WFhIVcGol6AYbaaG/4SIhyFrOFaWCfs5QLTYtWbh5GerP7G4C
+POST /acme/acme/authz/QSp1jwzbMy0pny57WFhIVcGol6AYbaaG
+POST /acme/acme/order/8CM59K7rkVP8NZSJhtCLag1BW2QzqmEI/finalize
+POST /acme/acme/order/8CM59K7rkVP8NZSJhtCLag1BW2QzqmEI
+POST /acme/acme/certificate/qyqlXNrfqFkG9TwOCosIQoSL41eiKarv
 ```
 
 Match it to the six steps above. The second `authz` request is certbot checking whether validation passed. The `new-nonce` call gets a one-time number that stops replayed requests.
@@ -168,17 +168,17 @@ sudo step certificate inspect /etc/letsencrypt/live/localhost/fullchain.pem --bu
 ```
 
 ```text title="Expected output"
-X.509v3 TLS Certificate (ECDSA P-256) [Serial: 1219...8986]
+X.509v3 TLS Certificate (ECDSA P-256) [Serial: 2987...3509]
   Subject:     localhost
   Issuer:      Lab CA Intermediate CA 2
   Provisioner: acme
-  Valid from:  2026-11-16T04:01:39Z
-          to:  2026-11-17T04:02:39Z
-X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1993...5668]
+  Valid from:  2026-11-21T02:27:38Z
+          to:  2026-11-22T02:28:38Z
+X.509v3 Intermediate CA Certificate (ECDSA P-256) [Serial: 1375...1468]
   Subject:     Lab CA Intermediate CA 2
   Issuer:      Lab CA Root CA
-  Valid from:  2026-11-16T04:02:18Z
-          to:  2036-11-13T04:02:18Z
+  Valid from:  2026-11-21T02:28:36Z
+          to:  2036-11-18T02:28:36Z
 ```
 
 The provisioner is now `acme`, and the lifetime is still 24 hours. The issuer is `Intermediate CA 2` because you rotated it in [module 6](/guides/operations/). If you skipped that, you'll see the original intermediate.
@@ -211,7 +211,7 @@ Processing /etc/letsencrypt/renewal/localhost.conf
 Certificate not yet due for renewal
 
 The following certificates are not due for renewal yet:
-  /etc/letsencrypt/live/localhost/fullchain.pem expires on 2026-11-17 (skipped)
+  /etc/letsencrypt/live/localhost/fullchain.pem expires on 2026-11-22 (skipped)
 No renewals were attempted.
 ```
 
@@ -240,7 +240,7 @@ All authorizations were not finalized by the CA.
 certbot's summary is vague. The real reason is in `/var/log/letsencrypt/letsencrypt.log`:
 
 ```text title="letsencrypt.log (excerpt)"
-"type":"http-01","status":"pending","token":"i3TjxPEbhNhRURTJN7hDc5HLy1VzaEPj","url":"https://localhost:9000/acme/acme/challenge/dsmAGej97IxLdrn1DPN5vKaTsCYHxcNR/1FkYe2j0nxNOKfdNoQ1bReGIsw0XccoZ","error":{"type":"urn:ietf:params:acme:error:connection","detail":"The server could not connect to validation target"}
+"type":"http-01","status":"pending","token":"OBc8bErwWV7tIrZifyUuzUW3VF8Sa7kE","url":"https://localhost:9000/acme/acme/challenge/YmfsDfgMU4HHmrkCswsUp6B648TZhNYY/hW3nzOUUrUuEv0BDOUth3fi7Zur1uBXu","error":{"type":"urn:ietf:params:acme:error:connection","detail":"The server could not connect to validation target"}
 ```
 
 The CA tried to fetch the token from `nothere.example.com` and couldn't. This is ACME working as designed. Note the error type: ACME errors are URNs from RFC 8555, so every client and server speaks the same language.
@@ -284,6 +284,16 @@ Many tools speak ACME natively. Point them at your directory URL and trust your 
 - **nginx** has no built-in client. Pair it with certbot and `--deploy-hook "systemctl reload nginx"`.
 
 Device attestation is an ACME extension too. It lets a device prove its key lives in a TPM or secure enclave before it gets a certificate.
+
+## Clean up
+
+Delete the certificate certbot saved for `localhost`. This also removes its renewal config:
+
+```sh title="terminal"
+sudo certbot delete --cert-name localhost
+```
+
+The ACME provisioner stays in your CA. It does nothing until a client uses it.
 
 ## Go deeper
 

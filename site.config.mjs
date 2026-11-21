@@ -7,4 +7,4 @@ export const SITE_URL = 'https://learnpki.com';
 export const SITE_NAME = 'Learn PKI';
 
 /** The source repository, for "Edit page" and GitHub links. */
-export const REPO_URL = 'https://github.com/llewis1234/pki-fun';
+export const REPO_URL = 'https://github.com/llewis1234/learnpki';

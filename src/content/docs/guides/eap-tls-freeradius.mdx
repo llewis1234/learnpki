@@ -67,40 +67,55 @@ Then stop the background service:
 sudo systemctl stop freeradius
 ```
 
-## 2. Add a provisioner for network certificates
+## 2. Add provisioners for network certificates
 
 The default step-ca template gives every certificate both Server and Client Authentication. That's convenient, but loose. A laptop certificate should never be able to pose as your RADIUS server.
 
-Create a template that sets one EKU, chosen by a `role` value:
+Make two templates. Each one sets exactly one EKU. Create the server template:
 
-```json title="wifi.tpl"
+```json title="wifi-server.tpl"
 {
 	"subject": {{ toJson .Subject }},
 	"sans": {{ toJson .SANs }},
 	"keyUsage": ["digitalSignature"],
-{{- if eq .Insecure.User.role "server" }}
 	"extKeyUsage": ["serverAuth"]
-{{- else }}
-	"extKeyUsage": ["clientAuth"]
-{{- end }}
 }
 ```
 
-Add a provisioner named `wifi` that uses it. Network certificates get a one-week default lifetime:
+Create the client template:
 
-```sh title="terminal"
-step ca provisioner add wifi --type JWK --create \
-  --x509-template wifi.tpl \
-  --x509-default-dur 168h --x509-max-dur 720h
+```json title="wifi-client.tpl"
+{
+	"subject": {{ toJson .Subject }},
+	"sans": {{ toJson .SANs }},
+	"keyUsage": ["digitalSignature"],
+	"extKeyUsage": ["clientAuth"]
+}
 ```
 
-Choose a password for the new provisioner when asked.
+Add a provisioner for each. Network certificates get a one-week default lifetime. Choose a different password for each provisioner when asked:
+
+```sh title="terminal"
+step ca provisioner add wifi-server --type JWK --create \
+  --x509-template wifi-server.tpl \
+  --x509-default-dur 168h --x509-max-dur 720h
+```
 
 ```text title="Expected output"
 ✔ CA Configuration: /home/ubuntu/.step/config/ca.json
 
 Success! Your `step-ca` config has been updated. To pick up the new configuration SIGHUP (kill -1 <pid>) or restart the step-ca process.
 ```
+
+```sh title="terminal"
+step ca provisioner add wifi-client --type JWK --create \
+  --x509-template wifi-client.tpl \
+  --x509-default-dur 168h --x509-max-dur 720h
+```
+
+:::caution[Don't let the requester pick the EKU]
+A template can read values the requester sends, such as `--set` values. Never use them to choose the EKU. Anyone with the provisioner password could then ask for a server certificate. Separate provisioners with separate passwords keep the two jobs apart. Only the RADIUS admin needs the `wifi-server` password.
+:::
 
 Tell step-ca to reload its config:
 
@@ -116,15 +131,15 @@ Make a working folder:
 mkdir -p ~/pki-lab/eap && cd ~/pki-lab/eap
 ```
 
-Issue the RADIUS server certificate. `--set role=server` picks the server branch of the template:
+Issue the RADIUS server certificate with the `wifi-server` provisioner:
 
 ```sh title="terminal"
 step ca certificate radius.example.com radius.crt radius.key \
-  --provisioner wifi --set role=server
+  --provisioner wifi-server
 ```
 
 ```text title="Expected output"
-✔ Provisioner: wifi (JWK) [kid: c703dzooi6hSNFaz00eax8xRxcQuzObfwvOAbKiInGA]
+✔ Provisioner: wifi-server (JWK) [kid: 85m-BbIkzLVQ8rrKY_N6IhQh42bghoKbJ3kbvfpikTQ]
 ✔ CA: https://localhost:9000
 ✔ Certificate: radius.crt
 ✔ Private Key: radius.key
@@ -133,7 +148,7 @@ step ca certificate radius.example.com radius.crt radius.key \
 Issue a client certificate for Alice's laptop:
 
 ```sh title="terminal"
-step ca certificate alice@example.com alice.crt alice.key --provisioner wifi
+step ca certificate alice@example.com alice.crt alice.key --provisioner wifi-client
 ```
 
 Check the EKUs:
@@ -190,6 +205,14 @@ sudo chmod 640 /etc/freeradius/3.0/certs/pki-lab/radius.key
 
 ## 5. Configure the EAP module
 
+Save a copy of the original file. You'll put it back when you clean up:
+
+```sh title="terminal"
+sudo cp -p /etc/freeradius/3.0/mods-available/eap /etc/freeradius/3.0/mods-available/eap.orig
+```
+
+FreeRADIUS loads only the modules in `mods-enabled`, so the copy has no effect.
+
 Open the EAP module config:
 
 ```sh title="terminal"
@@ -227,7 +250,7 @@ sudo freeradius -X
 ```
 
 ```text title="Expected output (last lines)"
-Listening on proxy address * port 42839
+Listening on proxy address * port 51348
 Ready to process requests
 ```
 
@@ -264,9 +287,9 @@ eapol_test -c eaptls.conf -a 127.0.0.1 -s testing123
 ```text title="Expected output (excerpt)"
 CTRL-EVENT-EAP-STARTED EAP authentication started
 CTRL-EVENT-EAP-METHOD EAP vendor 0 method 13 (TLS) selected
-CTRL-EVENT-EAP-PEER-CERT depth=2 subject='/O=Lab CA/CN=Lab CA Root CA' hash=0681c596b1048ed34c10c4f1e67aff7c79b0a411e092f146edd3e75618f19bd5
-CTRL-EVENT-EAP-PEER-CERT depth=1 subject='/O=Lab CA/CN=Lab CA Intermediate CA' hash=fec784d7112b3a5467c43a95a970589d2cd085f59e859e8f498479c197006c6b
-CTRL-EVENT-EAP-PEER-CERT depth=0 subject='/CN=radius.example.com' hash=a542894cc27f892f748dda5756bd9f6360a5311aec74657e5362641708bf16d7
+CTRL-EVENT-EAP-PEER-CERT depth=2 subject='/O=Lab CA/CN=Lab CA Root CA' hash=d52aa29d04fcb25bcd6c27a6c51d2b8bd12ccd94d8ff3740594b3dba6d8999d8
+CTRL-EVENT-EAP-PEER-CERT depth=1 subject='/O=Lab CA/CN=Lab CA Intermediate CA' hash=1ebfb7e16a2347fd7b5846e7885a4f8aba14528b10b696dc9634870f8935fac1
+CTRL-EVENT-EAP-PEER-CERT depth=0 subject='/CN=radius.example.com' hash=87ef9d4edac52b12f5b6ab7b54201795227d7e66a3d8e85359a45cca214d8404
 CTRL-EVENT-EAP-PEER-ALT depth=0 DNS:radius.example.com
 CTRL-EVENT-EAP-SUCCESS EAP authentication completed successfully
 ...
@@ -279,13 +302,13 @@ Read it from the laptop's point of view. It checked the server's chain to your r
 Now look at the FreeRADIUS terminal:
 
 ```text title="FreeRADIUS debug output (excerpt)"
-(3) eap_tls:   TLS-Client-Cert-Serial := "c5ef56b76aac228f0fa5fb8e820047ee"
+(3) eap_tls:   TLS-Client-Cert-Serial := "bdd170ca0cf9ed9b8028da8ef8d45703"
 (3) eap_tls:   TLS-Client-Cert-Subject := "/CN=alice@example.com"
 (3) eap_tls:   TLS-Client-Cert-Issuer := "/O=Lab CA/CN=Lab CA Intermediate CA"
-(3) eap_tls:   TLS-Client-Cert-Subject-Alt-Name-Email := "alice@example.com"
+(3) eap_tls:   TLS-Client-Cert-Common-Name := "alice@example.com"
 (3) eap_tls:   TLS-Client-Cert-X509v3-Extended-Key-Usage += "TLS Web Client Authentication"
 ...
-(4) Sent Access-Accept Id 4 from 127.0.0.1:1812 to 127.0.0.1:42326 length 173
+(4) Sent Access-Accept Id 4 from 127.0.0.1:1812 to 127.0.0.1:49872 length 173
 ```
 
 FreeRADIUS turned the certificate into attributes. A real deployment uses them in policy, for example to put a device on the right VLAN.
@@ -375,7 +398,7 @@ eapol_test -c servercert.conf -a 127.0.0.1 -s testing123
 (21) eap_tls: ERROR: (TLS) TLS - Alert write:fatal:unsupported certificate
 ```
 
-The signature is valid, but the EKU says `serverAuth` only. This is why the strict template in step 2 matters.
+The signature is valid, but the EKU says `serverAuth` only. This is why the strict templates in step 2 matter.
 
 ### An identity with a realm
 
@@ -412,6 +435,24 @@ At scale, an MDM pushes the root, the certificate and the Wi-Fi profile to each 
 ## Lifecycle
 
 Your client certificates last one week. A laptop renews its own with `step ca renew` before then, using the current certificate to authenticate. A lost laptop simply doesn't renew. See [module 6](/guides/operations/) for renewal and revocation, including CRLs.
+
+## Clean up
+
+Stop FreeRADIUS with `Ctrl+C` in its terminal.
+
+Put back the original EAP config:
+
+```sh title="terminal"
+sudo mv /etc/freeradius/3.0/mods-available/eap.orig /etc/freeradius/3.0/mods-available/eap
+```
+
+Remove the lab certificates:
+
+```sh title="terminal"
+sudo rm -r /etc/freeradius/3.0/certs/pki-lab
+```
+
+The CA keeps the `wifi-server` and `wifi-client` provisioners. Later modules don't use them.
 
 ## Go deeper
 

@@ -50,4 +50,22 @@ export const glossary: { term: string; def: string }[] = [
 	{ term: 'Trust store', def: 'The set of root certificates a system or application trusts by default.' },
 	{ term: 'Wildcard certificate', def: 'A certificate for *.example.com. ACME can only issue it through the dns-01 challenge.' },
 	{ term: 'X.509', def: 'The standard format for public key certificates.' },
+	{ term: 'Access-Accept', def: 'The RADIUS reply that lets a device onto the network. Access-Reject refuses it.' },
+	{ term: 'Client certificate', def: 'A certificate a client presents to prove who it is, as in mTLS or EAP-TLS. It needs the clientAuth EKU.' },
+	{ term: 'HSM', def: 'Hardware Security Module — a device that stores private keys and signs with them, so the keys never leave it.' },
+	{ term: 'NAS', def: 'Network Access Server — in RADIUS, the switch or access point that sends requests. In 802.1X it is the authenticator.' },
+	{ term: 'Name constraints', def: 'A CA certificate extension that limits the names the CA may issue for, such as only names under internal.example.com.' },
+	{ term: 'PEAP', def: 'Protected EAP — an EAP method that sends a password inside a TLS tunnel. Only the server needs a certificate.' },
+	{ term: 'Serial number', def: 'A number the CA gives each certificate, unique for that CA. Revocation lists identify certificates by it.' },
+	{ term: 'TLS handshake', def: 'The first messages of a TLS connection. The two sides agree on keys and check certificates before any data moves.' },
+	{ term: 'Trust anchor', def: 'A certificate or key that a system trusts directly, with nothing above it. Usually a root CA.' },
+	{ term: 'Validity period', def: 'The notBefore and notAfter dates of a certificate. Clients reject it outside that window.' },
 ];
+
+/** The anchor ID of a glossary term, for links such as `/glossary/#key-usage`. */
+export function termId(term: string): string {
+	return term
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-|-$/g, '');
+}

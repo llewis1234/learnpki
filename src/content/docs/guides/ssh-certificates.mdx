@@ -96,7 +96,7 @@ step ssh config --roots
 ```
 
 ```text title="Expected output"
-ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBJNE72/yogyhdZedsQrzNzCiqbhZQgDNkq1EtcaGYiBWwlSSZv6ne8NioCzBYiP88M3Fo9NL5C9lkp5CAiuu0uU=
+ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBK2Ba+EiOYgU6HyYChOxbONwDdBKuJ0ATHmekUw6Dz2zPkDim+cz+/6xh2gEV++y8zRRcg9RFbppsJsMOkcIZ3Y=
 ```
 
 That's the **user** CA public key. `step ssh config --host --roots` prints the host CA key.
@@ -116,7 +116,7 @@ sudo step ssh certificate --host --sign \
 `--sign` means "sign this existing public key", so no new key is made. `--ca-url` and `--root` matter because `sudo` runs as root, which has no step config of its own.
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
+✔ Provisioner: admin@example.com (JWK) [kid: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c]
 ✔ CA: https://localhost:9000
 ✔ Certificate: /etc/ssh/ssh_host_ecdsa_key-cert.pub
 ```
@@ -130,11 +130,11 @@ ssh-keygen -L -f /etc/ssh/ssh_host_ecdsa_key-cert.pub
 ```text title="Expected output"
 /etc/ssh/ssh_host_ecdsa_key-cert.pub:
         Type: ecdsa-sha2-nistp256-cert-v01@openssh.com host certificate
-        Public key: ECDSA-CERT SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic
-        Signing CA: ECDSA SHA256:V5d2k/Mh8hZQsv+5vCeQdlrG1/z5tYGmsVTczWGLKx0 (using ecdsa-sha2-nistp256)
+        Public key: ECDSA-CERT SHA256:jXBUH7RDoDyzaLbsVtY4hEZp9ZkAZMqU/nJnkbA1xPM
+        Signing CA: ECDSA SHA256:HmV4Pul5scja+zF/KBrXfqox0PRCKCv0d6XByH+tmig (using ecdsa-sha2-nistp256)
         Key ID: "host.example.com"
-        Serial: 14565824590151446183
-        Valid: from 2026-11-16T04:03:48 to 2026-12-16T04:04:48
+        Serial: 6867231075775752962
+        Valid: from 2026-11-21T02:29:11 to 2026-12-21T02:30:11
         Principals: 
                 localhost
                 host.example.com
@@ -196,20 +196,26 @@ Alice has no password and no `authorized_keys`. The certificate is the only way 
 
 ## 4. Get a user certificate
 
-On the client, ask for a certificate for Alice:
+Make a folder for the lab's SSH files. It keeps the lab key and the lab's trust apart from your own `~/.ssh`:
 
 ```sh title="terminal"
-step ssh certificate alice@example.com ~/.ssh/id_ecdsa
+mkdir -p ~/pki-lab/ssh && cd ~/pki-lab/ssh
+```
+
+Ask for a certificate for Alice:
+
+```sh title="terminal"
+step ssh certificate alice@example.com id_ecdsa
 ```
 
 Choose a password for the new private key, then enter the provisioner password.
 
 ```text title="Expected output"
-✔ Provisioner: admin@example.com (JWK) [kid: Cd7tLLuIuLwt1q99PInSoACmv1IcO7db19AOY_3AS_E]
+✔ Provisioner: admin@example.com (JWK) [kid: g1zyOj-wl88rXBet9_rLLiMIvmqgERXB07sYMELbX4c]
 ✔ CA: https://localhost:9000
-✔ Private Key: /home/ubuntu/.ssh/id_ecdsa
-✔ Public Key: /home/ubuntu/.ssh/id_ecdsa.pub
-✔ Certificate: /home/ubuntu/.ssh/id_ecdsa-cert.pub
+✔ Private Key: id_ecdsa
+✔ Public Key: id_ecdsa.pub
+✔ Certificate: id_ecdsa-cert.pub
 ✔ SSH Agent: yes
 ```
 
@@ -218,17 +224,17 @@ If no `ssh-agent` is running, the last line shows an error instead. That's harml
 The private key is protected by the passphrase you chose. Keep it that way. The certificate is public, but the key is not.
 
 ```sh title="terminal"
-ssh-keygen -L -f ~/.ssh/id_ecdsa-cert.pub
+ssh-keygen -L -f id_ecdsa-cert.pub
 ```
 
 ```text title="Expected output"
-/home/ubuntu/.ssh/id_ecdsa-cert.pub:
+id_ecdsa-cert.pub:
         Type: ecdsa-sha2-nistp256-cert-v01@openssh.com user certificate
-        Public key: ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
-        Signing CA: ECDSA SHA256:EIcXDAfDg6cm9wkLx2vr70NIgDt53MsMW6uYOQfLgtw (using ecdsa-sha2-nistp256)
+        Public key: ECDSA-CERT SHA256:IqSH8Vw/ewAlX3ryB55V9e9xJFKskkoY8apos+i+B58
+        Signing CA: ECDSA SHA256:6HSyylWcY50sc2bjZfWhviLUaMe2pgyHXWCbDEM6gOA (using ecdsa-sha2-nistp256)
         Key ID: "alice@example.com"
-        Serial: 9167219149753294453
-        Valid: from 2026-11-16T04:03:49 to 2026-11-16T20:04:49
+        Serial: 1262158180302151276
+        Valid: from 2026-11-21T02:29:11 to 2026-11-21T18:30:11
         Principals: 
                 alice
                 alice@example.com
@@ -249,24 +255,40 @@ Three things to notice:
 
 ## 5. Trust the host CA on the client
 
-Add one line to `~/.ssh/known_hosts`. It says: "for these host names, trust any host certificate from this CA."
+Make a `known_hosts` file for the lab with one line. It says: "for these host names, trust any host certificate from this CA."
 
 ```sh title="terminal"
-echo "@cert-authority [localhost]:2222,*.example.com $(step ssh config --host --roots)" >> ~/.ssh/known_hosts
+echo "@cert-authority [localhost]:2222,*.example.com $(step ssh config --host --roots)" > known_hosts
 ```
 
 `[localhost]:2222` is how OpenSSH writes a host on a non-standard port. `*.example.com` covers every server you'll add later.
 
+Now tell ssh to use the lab files. Create a client config in the same folder:
+
+```text title="~/pki-lab/ssh/config"
+Host localhost 127.0.0.1
+    Port 2222
+    IdentityFile ~/pki-lab/ssh/id_ecdsa
+    IdentitiesOnly yes
+    UserKnownHostsFile ~/pki-lab/ssh/known_hosts
+```
+
+- `IdentityFile` picks Alice's key. ssh loads `id_ecdsa-cert.pub` next to it automatically.
+- `IdentitiesOnly yes` stops ssh from trying your other keys.
+- `UserKnownHostsFile` uses the lab's trust, not `~/.ssh/known_hosts`.
+
 ## 6. Log in
 
+`-F config` makes ssh read only this file:
+
 ```sh title="terminal"
-ssh -p 2222 alice@localhost whoami
+ssh -F config alice@localhost whoami
 ```
 
 ssh asks for your key's passphrase. That unlocks the key on your laptop. It is not a server password.
 
 ```text title="Expected output"
-Enter passphrase for key '/home/ubuntu/.ssh/id_ecdsa':
+Enter passphrase for key '/home/ubuntu/pki-lab/ssh/id_ecdsa':
 alice
 ```
 
@@ -275,16 +297,16 @@ No account password. No "Are you sure you want to continue connecting?" Both sid
 Add `-v` to see it happen:
 
 ```sh title="terminal"
-ssh -v -p 2222 alice@localhost whoami
+ssh -F config -v alice@localhost whoami
 ```
 
 ```text title="Expected output (excerpt)"
-debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:vtR0vV1NmhQF2eZ7rbeUXhn9tr5JTux4uvANnGxTiic, serial 14565824590151446183 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:V5d2k/Mh8hZQsv+5vCeQdlrG1/z5tYGmsVTczWGLKx0 valid from 2026-11-16T04:03:48 to 2026-12-16T04:04:48
+debug1: Server host certificate: ecdsa-sha2-nistp256-cert-v01@openssh.com SHA256:jXBUH7RDoDyzaLbsVtY4hEZp9ZkAZMqU/nJnkbA1xPM, serial 6867231075775752962 ID "host.example.com" CA ecdsa-sha2-nistp256 SHA256:HmV4Pul5scja+zF/KBrXfqox0PRCKCv0d6XByH+tmig valid from 2026-11-21T02:29:11 to 2026-12-21T02:30:11
 debug1: Host '[localhost]:2222' is known and matches the ECDSA-CERT host certificate.
-debug1: Found CA key in /home/ubuntu/.ssh/known_hosts:1
+debug1: Found CA key in /home/ubuntu/pki-lab/ssh/known_hosts:1
 ...
-debug1: Offering public key: /home/ubuntu/.ssh/id_ecdsa ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
-debug1: Server accepts key: /home/ubuntu/.ssh/id_ecdsa ECDSA-CERT SHA256:hWMpvdzMtmwsqcM3MRO3+USpMPctT98cvYQXyDKjRe4
+debug1: Offering public key: /home/ubuntu/pki-lab/ssh/id_ecdsa ECDSA-CERT SHA256:IqSH8Vw/ewAlX3ryB55V9e9xJFKskkoY8apos+i+B58 explicit agent
+debug1: Server accepts key: /home/ubuntu/pki-lab/ssh/id_ecdsa ECDSA-CERT SHA256:IqSH8Vw/ewAlX3ryB55V9e9xJFKskkoY8apos+i+B58 explicit agent
 ```
 
 The first two lines are the host check. The last two are the user check.
@@ -302,10 +324,12 @@ sudo useradd -m bob
 Try to log in as Bob with Alice's certificate:
 
 ```sh title="terminal"
-ssh -p 2222 bob@localhost whoami
+ssh -F config bob@localhost whoami
 ```
 
 ```text title="Expected output"
+Permission denied, please try again.
+Permission denied, please try again.
 bob@localhost: Permission denied (publickey,password).
 ```
 
@@ -316,7 +340,7 @@ The signature is valid, but `bob` isn't a principal in the certificate. Principa
 Connect by IP address with strict checking on:
 
 ```sh title="terminal"
-ssh -p 2222 -o StrictHostKeyChecking=yes alice@127.0.0.1 whoami
+ssh -F config -o StrictHostKeyChecking=yes alice@127.0.0.1 whoami
 ```
 
 ```text title="Expected output"
@@ -330,10 +354,16 @@ If the CA line did cover the address, OpenSSH would still refuse, with `Certific
 
 ### No host CA trust at all
 
-Remove the `@cert-authority` line from `~/.ssh/known_hosts`. Then connect with strict checking:
+Move the lab's `known_hosts` file out of the way:
 
 ```sh title="terminal"
-ssh -p 2222 -o StrictHostKeyChecking=yes alice@localhost whoami
+mv known_hosts known_hosts.off
+```
+
+Connect with strict checking:
+
+```sh title="terminal"
+ssh -F config -o StrictHostKeyChecking=yes alice@localhost whoami
 ```
 
 ```text title="Expected output"
@@ -341,9 +371,15 @@ No ECDSA host key is known for [localhost]:2222 and you have requested strict ch
 Host key verification failed.
 ```
 
-The host certificate only helps clients that trust the host CA. Put the line back to continue.
+The host certificate only helps clients that trust the host CA. Put the file back:
+
+```sh title="terminal"
+mv known_hosts.off known_hosts
+```
 
 ## Clean up
+
+In the lab VM, you can skip this. Deleting the VM removes everything. On a host install, undo the changes this lab made.
 
 Stop the lab sshd, using its PID file:
 
@@ -351,11 +387,23 @@ Stop the lab sshd, using its PID file:
 sudo kill $(cat /run/sshd-pki-lab.pid)
 ```
 
-Remove its config:
+Remove its config, the user CA key and the host certificate:
 
 ```sh title="terminal"
-sudo rm /etc/ssh/pki-lab-sshd.conf
+sudo rm /etc/ssh/pki-lab-sshd.conf /etc/ssh/ssh_user_ca.pub /etc/ssh/ssh_host_ecdsa_key-cert.pub
 ```
+
+Remove the two lab accounts and their home folders:
+
+```sh title="terminal"
+sudo userdel -r alice
+```
+
+```sh title="terminal"
+sudo userdel -r bob
+```
+
+Your own `~/.ssh` was never changed. The lab files stay in `~/pki-lab/ssh` until you delete them.
 
 ## Go deeper
 

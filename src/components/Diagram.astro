@@ -1,12 +1,13 @@
 ---
 interface Props {
 	kind: 'chain' | 'mtls' | 'eaptls' | 'acme' | 'ssh';
+	/** The leaf certificate's name in the chain diagram. Match the name the lesson uses. */
+	leaf?: string;
 }
-const { kind } = Astro.props;
+const { kind, leaf = 'api.example.com' } = Astro.props;
 
 const alt = {
-	chain:
-		'Chain of trust: an offline, self-signed root CA signs an intermediate CA, and the intermediate CA signs a leaf certificate for api.example.com.',
+	chain: `Chain of trust: an offline, self-signed root CA signs an intermediate CA, and the intermediate CA signs a leaf certificate for ${leaf}.`,
 	mtls: 'mTLS handshake: the client sends ClientHello, the server returns its certificate and a certificate request, the client sends its certificate and proof of its key, and both sides verify each other against the CA.',
 	eaptls:
 		'EAP-TLS roles: the supplicant (a laptop or device) talks EAPOL to the authenticator (a switch or Wi-Fi access point), which relays to the RADIUS server (FreeRADIUS). Certificates are exchanged end to end inside EAP.',
@@ -23,7 +24,7 @@ const layouts: Record<Props['kind'], { h: number; boxes: Box[]; arrows: Arrow[];
 		boxes: [
 			{ x: 10, y: 40, w: 160, h: 60, title: 'Root CA', sub: 'offline, self-signed', accent: true },
 			{ x: 220, y: 40, w: 160, h: 60, title: 'Intermediate CA', sub: 'signs daily' },
-			{ x: 430, y: 40, w: 160, h: 60, title: 'Leaf certificate', sub: 'api.example.com' },
+			{ x: 430, y: 40, w: 160, h: 60, title: 'Leaf certificate', sub: leaf },
 		],
 		arrows: [
 			{ x1: 170, y1: 70, x2: 218, y2: 70, label: 'signs' },

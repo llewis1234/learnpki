@@ -19,7 +19,14 @@ npm ci
 npm run build
 ```
 
-For lab changes, run the lab's `solution.sh` followed by `check.sh` in order.
+For lab changes, run every lab on a disposable Ubuntu 24.04 machine, such as the lab VM. Then copy the real output into the lessons:
+
+```sh
+bash labs/run-all.sh > run.log
+python3 labs/refresh-output.py run.log
+```
+
+`run-all.sh` changes system files, starts servers and adds user accounts, so never run it on your own computer. The "Run labs" GitHub workflow runs it every week and on pull requests that change lessons or labs.
 
 ## Licensing
 

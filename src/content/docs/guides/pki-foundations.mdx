@@ -95,8 +95,8 @@ cat alice.pub
 
 ```text title="Expected output"
 -----BEGIN PUBLIC KEY-----
-MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEfNJAO7q8L0Gn9Pv87tU62DN8pDu+
-vtHs7ppwqz9SkpPPlpH2AqyZqSS11Yf/6Oxg36joeIlafEXV4xDfcYwXsw==
+MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEprWDozn2UctoIAn0FxdCyobq60aN
+xsWcJO8JgML1YGIu7BtdXNSG5EUTs1bo7AdUQGTI/5IVGxbxoW4WV5Lx5w==
 -----END PUBLIC KEY-----
 ```
 
@@ -168,7 +168,7 @@ A **Certificate Authority (CA)** signs certificates. Usually a long-lived root C
 
 <Diagram kind="chain" />
 
-Where do roots come from? Your operating system and browser ship with a **trust store** of more than 100 public roots. A private PKI, like the one you'll build, adds its own root to the machines that should trust it, and to nothing else.
+Where do roots come from? Your operating system and browser ship with a **trust store** of public roots. [Mozilla's list of included roots](https://wiki.mozilla.org/CA/Included_Certificates) is one you can read. A private PKI, like the one you'll build, adds its own root to the machines that should trust it, and to nothing else.
 
 ## When trust ends: expiry and revocation
 

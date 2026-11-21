@@ -21,6 +21,8 @@ export default defineConfig({
 		starlight({
 			title: SITE_NAME,
 			disable404Route: true,
+			// Shows a "Last updated" date from git on each page. Needs full git history in the build.
+			lastUpdated: true,
 			description:
 				'A free, hands-on place to learn certificate technologies. Build a real CA, secure services with mTLS and set up EAP-TLS using open-source tools.',
 			logo: {

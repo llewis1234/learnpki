@@ -2,11 +2,18 @@
 import Default from '@astrojs/starlight/components/Footer.astro';
 import FlashCards from './FlashCards.astro';
 import Icon from './Icon.astro';
-import { SITE_NAME } from '../../site.config.mjs';
+import { SITE_NAME, SITE_URL, REPO_URL } from '../../site.config.mjs';
 
 const { id, data } = Astro.locals.starlightRoute.entry;
 const isLesson = id.startsWith('guides/') && data.module !== undefined;
 const slug = id.replace(/^guides\//, '');
+
+// "Report a problem" opens a new GitHub issue with this page's URL filled in.
+const pageUrl = new URL(Astro.url.pathname, SITE_URL).href;
+const issueUrl = `${REPO_URL}/issues/new?${new URLSearchParams({
+	title: `Problem on ${Astro.url.pathname}`,
+	body: `Page: ${pageUrl}\n\nWhat is wrong:\n\nWhat you expected:\n`,
+})}`;
 ---
 
 {
@@ -25,6 +32,7 @@ const slug = id.replace(/^guides\//, '');
 
 <div class="site-footer-note">
 	<p>{SITE_NAME} — learn certificates by building with open-source tools.</p>
+	<p>Found a mistake or a command that fails? <a href={issueUrl}>Report a problem</a>.</p>
 	<p>An independent project. Not affiliated with or endorsed by Smallstep, FreeRADIUS or nginx.</p>
 	<p>
 		Code and labs: <a href="https://www.apache.org/licenses/LICENSE-2.0">Apache-2.0</a>.
