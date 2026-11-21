@@ -26,13 +26,13 @@ const lessons = await getLessons();
 			))
 		}
 	</ul>
-	<p class="empty pf-muted" hidden>No guides match those filters yet.</p>
+	<p class="empty pf-muted" hidden>No modules match those filters.</p>
 </div>
 
 <script>
 	const root = document.querySelector<HTMLElement>('.guides');
 	if (root) {
-		// Filters need JavaScript; without it, every guide stays visible.
+		// Filters need JavaScript; without it, every module stays visible.
 		root.querySelector<HTMLElement>('.filters')!.hidden = false;
 		const state = { topic: '', level: '' };
 		const items = [...root.querySelectorAll<HTMLElement>('.grid > li')];

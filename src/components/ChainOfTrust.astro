@@ -1,0 +1,164 @@
+---
+import Icon from './Icon.astro';
+
+/** The hero illustration: a root CA signs an intermediate CA, which signs a leaf certificate. */
+const nodes = [
+	{ icon: 'shield-check', title: 'Root CA', sub: 'Self-signed. Kept offline.', tag: 'Trusted', kind: 'root' },
+	{ icon: 'layers', title: 'Intermediate CA', sub: 'Signs certificates every day.', tag: 'CA', kind: 'mid' },
+	{ icon: 'certificate', title: 'Leaf certificate', sub: 'web.example.com', tag: 'Server', kind: 'leaf' },
+] as const;
+---
+
+<figure class="chain">
+	<ol class="chain-list">
+		{
+			nodes.map((n, i) => (
+				<>
+					{i > 0 && (
+						<li class="link" aria-hidden="true">
+							<span class="line" />
+							<span class="label">signs</span>
+						</li>
+					)}
+					<li class={`node ${n.kind}`}>
+						<span class="tile">
+							<Icon name={n.icon} size="1.25rem" />
+						</span>
+						<span class="text">
+							<span class="title">{n.title}</span>
+							<span class="sub">{n.sub}</span>
+						</span>
+						<span class="tag">{n.tag}</span>
+					</li>
+				</>
+			))
+		}
+	</ol>
+	<figcaption>
+		A chain of trust. Each certificate is signed by the one above it. Clients check every signature up to a root they
+		already trust.
+	</figcaption>
+</figure>
+
+<style>
+	.chain {
+		margin: 0;
+		max-width: 26rem;
+		margin-inline: auto;
+	}
+	.chain-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.node {
+		display: flex;
+		align-items: center;
+		gap: 0.9rem;
+		border: 1px solid var(--pf-border);
+		border-radius: var(--pf-radius);
+		background: var(--pf-card);
+		padding: 0.85rem 1rem;
+		box-shadow: var(--pf-shadow);
+	}
+	.node.root {
+		border-color: color-mix(in oklab, var(--pf-primary) 55%, var(--pf-border));
+		background: color-mix(in oklab, var(--pf-primary) 10%, var(--pf-card));
+	}
+	.node.mid {
+		margin-inline-start: 1.5rem;
+	}
+	.node.leaf {
+		margin-inline-start: 3rem;
+	}
+	.tile {
+		display: grid;
+		place-items: center;
+		flex-shrink: 0;
+		width: 2.5rem;
+		height: 2.5rem;
+		border-radius: 0.6rem;
+		background: color-mix(in oklab, var(--pf-primary) 16%, transparent);
+		color: var(--pf-primary);
+	}
+	.root .tile {
+		background: var(--pf-primary);
+		color: var(--pf-primary-fg);
+	}
+	.text {
+		display: flex;
+		flex-direction: column;
+		min-width: 0;
+		flex: 1;
+	}
+	.title {
+		font-family: var(--pf-font-display);
+		font-weight: 600;
+		color: var(--sl-color-white);
+		line-height: 1.3;
+	}
+	.sub {
+		font-size: 0.85rem;
+		color: var(--pf-muted);
+	}
+	.leaf .sub {
+		font-family: var(--sl-font-mono);
+		font-size: 0.8rem;
+	}
+	.tag {
+		flex-shrink: 0;
+		border-radius: 999px;
+		background: var(--pf-secondary);
+		color: var(--pf-muted);
+		padding: 0.1rem 0.55rem;
+		font-size: 0.7rem;
+		font-weight: 500;
+	}
+	.root .tag {
+		background: color-mix(in oklab, var(--pf-primary) 20%, transparent);
+		color: var(--pf-accent-fg);
+	}
+	.link {
+		position: relative;
+		height: 2.25rem;
+	}
+	.link:nth-child(2) {
+		margin-inline-start: 1.25rem;
+	}
+	.link:nth-child(4) {
+		margin-inline-start: 2.75rem;
+	}
+	.line {
+		position: absolute;
+		inset-block: 0;
+		inset-inline-start: 1rem;
+		width: 2px;
+		background: linear-gradient(var(--pf-primary), color-mix(in oklab, var(--pf-primary) 35%, transparent));
+	}
+	.line::after {
+		content: '';
+		position: absolute;
+		bottom: -1px;
+		left: 50%;
+		width: 0.5rem;
+		height: 0.5rem;
+		border-right: 2px solid color-mix(in oklab, var(--pf-primary) 60%, transparent);
+		border-bottom: 2px solid color-mix(in oklab, var(--pf-primary) 60%, transparent);
+		transform: translateX(-50%) rotate(45deg);
+	}
+	.label {
+		position: absolute;
+		inset-inline-start: 1.75rem;
+		top: 50%;
+		transform: translateY(-50%);
+		font-family: var(--sl-font-mono);
+		font-size: 0.72rem;
+		color: var(--pf-primary);
+	}
+	figcaption {
+		margin-top: 1rem;
+		font-size: 0.8rem;
+		line-height: 1.5;
+		color: var(--pf-muted);
+	}
+</style>

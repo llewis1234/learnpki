@@ -1,56 +1,60 @@
 ---
-import { Code } from '@astrojs/starlight/components';
 import Icon from './Icon.astro';
+import ChainOfTrust from './ChainOfTrust.astro';
 import { SITE_NAME } from '../../site.config.mjs';
+import { getLessons, tracks } from '../data/lessons';
 
-const tracks = [
-	{ icon: 'key', title: 'PKI', text: 'Keys, certificates, CAs and chains of trust — explained plainly, then built for real.' },
-	{ icon: 'network', title: 'mTLS', text: 'Make clients and servers prove who they are. Lock down a service with nginx and client certificates.' },
-	{ icon: 'wifi', title: 'EAP-TLS', text: 'Join networks with certificates, not passwords, using FreeRADIUS and 802.1X.' },
-] as const;
+// Each track card links to the track's first module and shows how many modules it has.
+const lessons = await getLessons();
+const trackCards = tracks.map((t) => {
+	const items = lessons.filter((l) => l.data.track === t.name);
+	return { ...t, count: items.length, href: items[0]?.href ?? '/path/' };
+});
 ---
 
 <div class="pf-wide home not-content">
-	<section class="hero pf-grid-bg">
+	<section class="hero">
 		<div class="hero-copy">
 			<span class="badge"><Icon name="terminal" class="badge-icon" /> Free · Open-source tools · No experience needed</span>
 			<h1 id="_top">Learn certificates by <span class="hl">building</span> them.</h1>
 			<p class="lede">
 				Whether you're curious, studying, or managing systems, {SITE_NAME} walks you from “what is a certificate?” to
-				running your own CA, mutual TLS and EAP-TLS — on your own machine.
+				running your own <a href="/glossary/#ca-certificate-authority">certificate authority (CA)</a>: the service that
+				signs certificates. Then you use it for mutual TLS, EAP-TLS and more, on your own machine.
 			</p>
 			<div class="actions">
 				<a class="pf-btn pf-btn-primary" href="/path/">Start the path <Icon name="arrow" /></a>
-				<a class="pf-btn" href="/guides/">Browse guides</a>
+				<a class="pf-btn" href="/guides/">Browse all modules</a>
 			</div>
 		</div>
-		<div class="hero-code">
-			<Code
-				lang="sh"
-				title="Your first CA, in one command"
-				code={`step ca init --name "Lab CA" \\\n  --dns localhost --address 127.0.0.1:9000 \\\n  --provisioner admin@example.com`}
-			/>
-			<Code
-				lang="text"
-				title="Expected output (excerpt)"
-				code={`✔ Root certificate: ~/.step/certs/root_ca.crt\n✔ Intermediate certificate: ~/.step/certs/intermediate_ca.crt`}
-			/>
+		<div class="hero-art">
+			<ChainOfTrust />
 		</div>
 	</section>
 
 	<section class="tracks">
-		<h2>Three tracks, one real build</h2>
+		<h2>Five tracks, one CA</h2>
 		<p class="pf-muted intro">
-			Each track mixes short explanations with labs you run yourself. Follow them in order, or jump to what you need.
+			Each track mixes short explanations with labs you run yourself. Every track uses the CA you build in Core. Follow them in order, or jump to what you need.
 		</p>
 		<div class="track-grid">
 			{
-				tracks.map((t) => (
-					<div class="pf-card track">
-						<Icon name={t.icon} size="1.5rem" class="track-icon" />
-						<h3>{t.title}</h3>
+				trackCards.map((t) => (
+					<a class="pf-card track" href={t.href}>
+						<span class="track-tile">
+							<Icon name={t.icon} size="1.35rem" />
+						</span>
+						<h3>{t.name}</h3>
 						<p class="pf-muted">{t.text}</p>
-					</div>
+						<span class="track-foot">
+							<span class="count">
+								{t.count} {t.count === 1 ? 'module' : 'modules'}
+							</span>
+							<span class="start">
+								Start <Icon name="arrow" />
+							</span>
+						</span>
+					</a>
 				))
 			}
 		</div>
@@ -74,7 +78,22 @@ const tracks = [
 		align-items: center;
 		margin-inline: calc(-1 * var(--sl-content-pad-x));
 		padding: 3.5rem var(--sl-content-pad-x);
-		border-bottom: 1px solid var(--pf-border);
+		position: relative;
+		isolation: isolate;
+	}
+	/* The grid fades out toward every edge instead of ending in a hard line. */
+	.hero::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background-image:
+			linear-gradient(var(--pf-grid-line) 1px, transparent 1px),
+			linear-gradient(90deg, var(--pf-grid-line) 1px, transparent 1px);
+		background-size: 32px 32px;
+		-webkit-mask-image: radial-gradient(ellipse closest-side at 50% 45%, #000 30%, transparent 100%);
+		mask-image: radial-gradient(ellipse closest-side at 50% 45%, #000 30%, transparent 100%);
+		pointer-events: none;
 	}
 	.badge {
 		display: inline-flex;
@@ -108,17 +127,19 @@ const tracks = [
 		line-height: 1.7;
 		color: var(--pf-muted);
 	}
+	.lede a {
+		color: var(--sl-color-text-accent);
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.75rem;
 		margin-top: 2rem;
 	}
-	.hero-code {
+	.hero-art {
 		min-width: 0;
-	}
-	.hero-code > :global(* + *) {
-		margin-top: 0.75rem;
 	}
 	.tracks {
 		padding: 4rem 0 1rem;
@@ -139,10 +160,43 @@ const tracks = [
 		margin-top: 2.5rem;
 	}
 	.track {
+		display: flex;
+		flex-direction: column;
 		padding: 1.5rem;
+		color: inherit;
+		text-decoration: none;
 	}
-	.track :global(.track-icon) {
+	@media (prefers-reduced-motion: no-preference) {
+		.track {
+			transition:
+				transform 0.15s,
+				border-color 0.15s,
+				box-shadow 0.15s;
+		}
+	}
+	.track:hover {
+		transform: translateY(-3px);
+		border-color: color-mix(in oklab, var(--pf-primary) 45%, var(--pf-border));
+		box-shadow:
+			var(--pf-shadow),
+			0 12px 28px -16px color-mix(in oklab, var(--pf-primary) 55%, transparent);
+	}
+	.track:focus-visible {
+		outline: 2px solid var(--pf-primary);
+		outline-offset: 3px;
+	}
+	.track-tile {
+		display: grid;
+		place-items: center;
+		width: 2.75rem;
+		height: 2.75rem;
+		border-radius: 0.7rem;
+		background: color-mix(in oklab, var(--pf-primary) 16%, transparent);
 		color: var(--pf-primary);
+	}
+	.track:hover .track-tile {
+		background: var(--pf-primary);
+		color: var(--pf-primary-fg);
 	}
 	.track h3 {
 		margin-top: 1rem;
@@ -154,6 +208,33 @@ const tracks = [
 		margin-top: 0.5rem;
 		font-size: 0.875rem;
 		line-height: 1.65;
+	}
+	.track-foot {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		margin-top: auto;
+		padding-top: 1.25rem;
+		font-size: 0.8rem;
+	}
+	.count {
+		color: var(--pf-muted);
+	}
+	.start {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.3rem;
+		font-weight: 600;
+		color: var(--sl-color-text-accent);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.start :global(svg) {
+			transition: transform 0.15s;
+		}
+	}
+	.track:hover .start :global(svg) {
+		transform: translateX(3px);
 	}
 	.cta {
 		display: flex;
@@ -189,12 +270,17 @@ const tracks = [
 			grid-template-columns: repeat(3, 1fr);
 		}
 	}
+	@media (min-width: 72rem) {
+		.track-grid {
+			grid-template-columns: repeat(5, 1fr);
+		}
+	}
 	@media (min-width: 64rem) {
 		.hero {
 			grid-template-columns: 1fr 1fr;
 			padding-block: 5.5rem;
 		}
-		.hero-code {
+		.hero-art {
 			padding-inline-start: 2rem;
 		}
 	}

@@ -6,6 +6,8 @@ module: 1
 topic: PKI
 level: Beginner
 minutes: 25
+track: Core
+requires: []
 sidebar:
   label: 1. PKI Foundations
 cards:
@@ -24,6 +26,11 @@ cards:
 import Diagram from '../../../components/Diagram.astro';
 
 Public Key Infrastructure (PKI) is the set of people, policies and software that lets two strangers on a network decide whether to trust each other. Every padlock in your browser, every signed software update and every enterprise Wi-Fi login leans on it.
+
+:::note[Before you start]
+- The step CLI and OpenSSL. The [lab VM](/setup/) has both.
+- One terminal. You don't need a CA yet.
+:::
 
 ## Hashes
 

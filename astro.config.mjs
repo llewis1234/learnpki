@@ -68,11 +68,11 @@ export default defineConfig({
 					label: 'Start here',
 					items: [
 						{ label: 'Learning Path', link: '/path/' },
-						{ label: 'Browse guides', link: '/guides/' },
+						{ label: 'All modules', link: '/guides/' },
 						{ slug: 'setup' },
 					],
 				},
-				{ label: 'Lessons', items: lessons.map((slug) => ({ slug })) },
+				{ label: 'Modules', items: lessons.map((slug) => ({ slug })) },
 				{ label: 'Reference', items: [{ slug: 'glossary' }, { slug: 'about' }] },
 			],
 		}),

@@ -10,6 +10,10 @@ const lessonFields = z.object({
 	topic: z.enum(['PKI', 'mTLS', 'EAP-TLS', 'ACME', 'SSH', 'Tools']).optional(),
 	level: z.enum(['Beginner', 'Intermediate', 'Advanced']).optional(),
 	minutes: z.number().int().positive().optional(),
+	/** The Learning Path track the lesson belongs to. */
+	track: z.enum(['Core', 'mTLS', 'EAP-TLS', 'Operate', 'SSH']).optional(),
+	/** Module numbers a reader should finish first. */
+	requires: z.array(z.number().int().positive()).default([]),
 	/** True while a lesson is only an outline. */
 	outline: z.boolean().default(false),
 	/** Optional flip cards shown at the end of a lesson. Nothing is scored or saved. */

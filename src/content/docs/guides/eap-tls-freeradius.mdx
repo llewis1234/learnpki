@@ -6,6 +6,8 @@ module: 5
 topic: EAP-TLS
 level: Advanced
 minutes: 45
+track: EAP-TLS
+requires: [2, 3]
 sidebar:
   label: 5. EAP-TLS with FreeRADIUS
 cards:
@@ -26,6 +28,13 @@ import Diagram from '../../../components/Diagram.astro';
 **EAP-TLS** is how many organisations let devices onto a network without passwords. The device presents a certificate, a RADIUS server checks it, and the switch or access point opens the port.
 
 In this lab you'll build the server side with FreeRADIUS and test it with `eapol_test`. You don't need an access point. Everything runs in the [lab VM](/setup/).
+
+:::note[Before you start]
+- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
+- How to issue a certificate, from [module 3](/guides/issue-and-inspect/).
+- FreeRADIUS and `eapol_test`, with the FreeRADIUS service stopped. The lab VM has this.
+- Three terminals: the CA, FreeRADIUS in debug mode, and your commands.
+:::
 
 ## Why certificates for network access?
 
@@ -48,7 +57,7 @@ There's a second reason to run your own CA for this. Public CAs are moving away 
 The TLS handshake runs end to end between the device and FreeRADIUS. The access point only carries the packets.
 
 :::note[On your own machine]
-The lab VM has everything this lesson needs. On a host install, use Ubuntu or Debian. The package names and paths below are for Debian-based systems. They were tested with FreeRADIUS 3.2.5 and eapol_test 2.10.
+The lab VM has everything this module needs. On a host install, use Ubuntu or Debian. The package names and paths below are for Debian-based systems. They were tested with FreeRADIUS 3.2.5 and eapol_test 2.10.
 :::
 
 ## 1. Get the tools ready

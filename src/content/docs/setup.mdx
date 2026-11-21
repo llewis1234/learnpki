@@ -1,16 +1,16 @@
 ---
 title: Lab Setup
-description: Launch a disposable Ubuntu 24.04 lab VM with Multipass. Every tool the lessons use comes pre-installed, on macOS, Windows or Linux.
+description: Launch a disposable Ubuntu 24.04 lab VM with Multipass. Every tool the modules use comes pre-installed, on macOS, Windows or Linux.
 ---
 
 import { Tabs, TabItem, CardGrid, Card } from '@astrojs/starlight/components';
 
-The lessons run in a **lab VM**: a disposable Ubuntu 24.04 virtual machine. One setup file builds the same machine on macOS, Windows and Linux. The only thing you install on your own computer is Multipass, the tool that runs it.
+The modules run in a **lab VM**: a disposable Ubuntu 24.04 virtual machine. One setup file builds the same machine on macOS, Windows and Linux. The only thing you install on your own computer is Multipass, the tool that runs it.
 
 Plan on about 15 minutes, most of it waiting for downloads.
 
 :::tip[Why a VM?]
-The labs install servers, edit files in `/etc` and run commands with `sudo`. A VM keeps all of that off your own computer. It also gives you the exact versions the lesson output came from. When something breaks, roll back. When you're done, delete it.
+The labs install servers, edit files in `/etc` and run commands with `sudo`. A VM keeps all of that off your own computer. It also gives you the exact versions the expected output came from. When something breaks, roll back. When you're done, delete it.
 :::
 
 ## What's in the lab VM
@@ -26,7 +26,7 @@ The labs install servers, edit files in `/etc` and run commands with `sudo`. A V
 	<Card title="curl and jq">Test clients and JSON tools for the terminal.</Card>
 </CardGrid>
 
-The lessons are written against **step CLI 0.31.0** and **step-ca 0.30.2**. The lab VM installs exactly these versions and checks their SHA-256 hashes first.
+The modules are written against **step CLI 0.31.0** and **step-ca 0.30.2**. The lab VM installs exactly these versions and checks their SHA-256 hashes first.
 
 The other tools come from Ubuntu 24.04: OpenSSL 3.0.13, nginx 1.24.0, FreeRADIUS 3.2.5, eapol_test 2.10 and OpenSSH 9.6. certbot comes from the Snap Store, so you get the current release.
 
@@ -92,7 +92,7 @@ multipass launch 24.04 --name pki-lab --cpus 2 --memory 2G --disk 10G --timeout 
 
 | Option | Meaning |
 |---|---|
-| `24.04` | The Ubuntu release. Every lesson was tested on it. |
+| `24.04` | The Ubuntu release. Every module was tested on it. |
 | `--name pki-lab` | The name you use in every other `multipass` command. |
 | `--cpus 2 --memory 2G --disk 10G` | Room for all the labs. Multipass's defaults are smaller. |
 | `--timeout 900` | Wait up to 15 minutes. The first launch downloads Ubuntu and every package. |
@@ -110,7 +110,7 @@ multipass exec pki-lab -- cloud-init status --wait
 multipass shell pki-lab
 ```
 
-Your prompt changes to `ubuntu@pki-lab`. Run every lesson command here, unless a lesson tells you otherwise.
+Your prompt changes to `ubuntu@pki-lab`. Run every module command here, unless a module tells you otherwise.
 
 ## 5. Check it worked
 
@@ -177,7 +177,7 @@ multipass restore pki-lab.fresh --destructive
 `--destructive` discards everything since the snapshot. Without it, Multipass asks whether to save the current state first.
 
 :::tip[Snapshot after module 2]
-Most lessons build on the CA from [module 2](/guides/build-your-ca/). Take a second snapshot, such as `--name ca-ready`, after you finish it.
+Most modules build on the CA from [module 2](/guides/build-your-ca/). Take a second snapshot, such as `--name ca-ready`, after you finish it.
 :::
 
 ## Everyday commands
@@ -192,11 +192,11 @@ Run these on your own computer, not in the VM:
 | Copy a file out of the VM | `multipass transfer pki-lab:pki-lab/issue/web.crt .` |
 | Delete it for good | `multipass delete --purge pki-lab` |
 
-Each lesson's step-ca runs in the foreground. After a restart, start it again from the VM shell, as in [module 2](/guides/build-your-ca/#start-the-ca-server).
+Each module's step-ca runs in the foreground. After a restart, start it again from the VM shell, as in [module 2](/guides/build-your-ca/#start-the-ca-server).
 
 ## Advanced: install on your own machine
 
-You can skip the VM and install the tools directly. The lesson commands are the same. Some lab steps change system services, and your output shows your own paths instead of `/home/ubuntu`.
+You can skip the VM and install the tools directly. The module commands are the same. Some lab steps change system services, and your output shows your own paths instead of `/home/ubuntu`.
 
 <Tabs syncKey="host">
 <TabItem label="Linux (Debian/Ubuntu)">
@@ -260,13 +260,13 @@ Make the lab folder:
 mkdir -p ~/pki-lab
 ```
 
-The lab VM also makes three changes you'll meet in the lessons on a host install:
+The lab VM also makes three changes you'll meet in the modules on a host install:
 
 - The `freeradius` service starts on install. [Module 5](/guides/eap-tls-freeradius/) stops it.
 - nginx's default site holds port 80, which certbot needs in [module 7](/guides/acme/).
 - [Module 8](/guides/ssh-certificates/) needs the `/run/sshd` folder.
 
-Each lesson shows the fix where it matters.
+Each module shows the fix where it matters.
 
 </TabItem>
 <TabItem label="macOS">
@@ -300,7 +300,7 @@ Then open Ubuntu and follow the Linux steps.
 step keeps your CA in `~/.step`. Run `step path` to see where. To start over on a host install, stop step-ca and delete `~/.step` and `~/pki-lab`.
 
 :::note[Prefer containers?]
-You can run step-ca with Docker instead, using the official [smallstep/step-ca image](https://hub.docker.com/r/smallstep/step-ca). Commands in the lessons work the same once your CLI points at it.
+You can run step-ca with Docker instead, using the official [smallstep/step-ca image](https://hub.docker.com/r/smallstep/step-ca). Commands in the modules work the same once your CLI points at it.
 :::
 
 Package names and versions change over time. Check each project's official install docs if a command fails.

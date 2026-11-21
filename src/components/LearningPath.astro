@@ -1,5 +1,5 @@
 ---
-import { getLessons } from '../data/lessons';
+import { getLessons, tracks } from '../data/lessons';
 import LessonCard from './LessonCard.astro';
 import ProgressBar from './ProgressBar.astro';
 
@@ -11,15 +11,26 @@ const lessons = await getLessons();
 		A suggested order from first principles to production-style labs. Your progress is saved in this browser only.
 	</p>
 	<ProgressBar slugs={lessons.map((l) => l.slug)} />
-	<ol>
-		{
-			lessons.map((l) => (
-				<li>
-					<LessonCard lesson={l} />
-				</li>
-			))
-		}
-	</ol>
+	{
+		tracks.map((t) => {
+			const items = lessons.filter((l) => l.data.track === t.name);
+			return (
+				items.length > 0 && (
+					<section class="track" aria-labelledby={`track-${t.name}`}>
+						<h2 id={`track-${t.name}`}>{t.name}</h2>
+						<p class="pf-muted track-text">{t.text}</p>
+						<ol>
+							{items.map((l) => (
+								<li>
+									<LessonCard lesson={l} />
+								</li>
+							))}
+						</ol>
+					</section>
+				)
+			);
+		})
+	}
 </div>
 
 <style>
@@ -33,9 +44,21 @@ const lessons = await getLessons();
 		max-width: 40rem;
 		font-size: 1.05rem;
 	}
+	.track {
+		margin-top: 3rem;
+	}
+	.track h2 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--sl-color-white);
+	}
+	.track-text {
+		margin-top: 0.25rem;
+		max-width: 40rem;
+	}
 	ol {
 		list-style: none;
-		margin-top: 3rem;
+		margin-top: 1.5rem;
 		padding-inline-start: 2rem;
 		border-inline-start: 2px dashed var(--pf-border);
 	}

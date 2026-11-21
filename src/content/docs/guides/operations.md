@@ -6,6 +6,8 @@ module: 6
 topic: PKI
 level: Intermediate
 minutes: 40
+track: Operate
+requires: [2, 3]
 sidebar:
   label: 6. Operations
 cards:
@@ -21,13 +23,19 @@ cards:
 
 A certificate is not a one-time job. It is issued, renewed, sometimes revoked, and always expires. This module runs that whole cycle on your CA from [module 2](/guides/build-your-ca/), then teaches you to debug the errors you'll see in real life.
 
-Keep the CA running. Work in a new folder:
+:::note[Before you start]
+- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
+- If you did [module 5](/guides/eap-tls-freeradius/), your CA has three JWK provisioners. When step asks which one to use, pick `admin@example.com`.
+- Time for a six-minute wait in "Break it: let a certificate expire".
+- You'll edit `ca.json` and restart the CA several times. Port 9443 must be free.
+- Two terminals for commands, as well as the CA's own.
+:::
+
+Work in a new folder:
 
 ```sh title="terminal"
 mkdir -p ~/pki-lab/ops && cd ~/pki-lab/ops
 ```
-
-If you did [module 5](/guides/eap-tls-freeradius/), your CA has three JWK provisioners. When step asks which one to use, pick `admin@example.com`.
 
 Get a certificate to work with:
 

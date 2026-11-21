@@ -6,6 +6,8 @@ module: 4
 topic: mTLS
 level: Intermediate
 minutes: 35
+track: mTLS
+requires: [2, 3]
 sidebar:
   label: '4. mTLS with nginx'
 cards:
@@ -25,7 +27,14 @@ In normal TLS only the server shows a certificate. With **mutual TLS (mTLS)** th
 
 <Diagram kind="mtls" />
 
-You need the CA from [module 2](/guides/build-your-ca/) running before you start. Work in a new folder:
+:::note[Before you start]
+- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
+- How to issue a certificate, from [module 3](/guides/issue-and-inspect/).
+- nginx, running. The lab VM has it. Port 8443 must be free.
+- A second terminal for this module's commands.
+:::
+
+Work in a new folder:
 
 ```sh title="terminal"
 mkdir -p ~/pki-lab/mtls && cd ~/pki-lab/mtls

@@ -6,6 +6,8 @@ module: 8
 topic: SSH
 level: Intermediate
 minutes: 35
+track: SSH
+requires: [2, 3]
 sidebar:
   label: 8. SSH certificates
 cards:
@@ -22,6 +24,13 @@ cards:
 import Diagram from '../../../components/Diagram.astro';
 
 OpenSSH has its own certificate format. Instead of copying public keys into every server's `authorized_keys`, servers trust one SSH CA. Users and hosts get short-lived certificates signed by it.
+
+:::note[Before you start]
+- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
+- Linux with `openssh-server` and `sudo`. The lab VM has both. Port 2222 must be free.
+- A second terminal for this module's commands.
+- This module adds two local accounts, `alice` and `bob`. Its clean-up removes them.
+:::
 
 ## The problem with plain SSH keys
 

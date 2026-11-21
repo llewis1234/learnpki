@@ -41,8 +41,11 @@ section() { printf '\n@@@ %s\n' "$1"; }
 run() { "$@" 2>&1; }
 # Checks that the last captured text contains a string the lesson relies on.
 expect() {
-	# step colours its output. Compare the text without colour codes.
-	if ! sed 's/\x1b\[[0-9;]*m//g' <<<"$1" | grep -qF -- "$2"; then
+	# step colours its output. Compare the text without colour codes. No pipe here:
+	# with pipefail, `grep -q` can stop early and make the pipe fail on long output.
+	local plain
+	plain=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$1")
+	if ! grep -qF -- "$2" <<<"$plain"; then
 		echo "@@x FAIL: expected '$2'" >&2
 		echo "@@x FAIL: expected '$2'"
 		fail=1

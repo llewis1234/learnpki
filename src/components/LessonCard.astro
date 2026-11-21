@@ -7,6 +7,7 @@ interface Props {
 }
 const { lesson } = Astro.props;
 const { data } = lesson;
+const needs = data.requires.length ? `Needs module${data.requires.length > 1 ? 's' : ''} ${data.requires.join(' and ')}` : '';
 ---
 
 <a
@@ -32,6 +33,7 @@ const { data } = lesson;
 		<span class="time"><Icon name="clock" /> {data.minutes} min</span>
 		{data.outline && <span class="outline">Outline</span>}
 	</span>
+	{needs && <span class="needs">{needs}</span>}
 </a>
 
 <style>
@@ -86,6 +88,11 @@ const { data } = lesson;
 	}
 	.lesson-card:hover .title {
 		color: var(--pf-primary);
+	}
+	.needs {
+		margin-top: 0.75rem;
+		font-size: 0.8rem;
+		color: var(--pf-muted);
 	}
 	.summary {
 		flex: 1;

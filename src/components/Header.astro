@@ -6,14 +6,14 @@ import ThemeSelect from 'virtual:starlight/components/ThemeSelect';
 
 const nav = [
 	{ href: '/path/', label: 'Learning Path' },
-	{ href: '/guides/', label: 'Guides' },
+	{ href: '/guides/', label: 'Modules' },
 	{ href: '/glossary/', label: 'Glossary' },
 	{ href: '/setup/', label: 'Lab Setup' },
 	{ href: '/about/', label: 'About' },
 ];
 
 const path = Astro.url.pathname;
-// Lesson pages live under /guides/, so they highlight "Guides".
+// Module pages live under /guides/, so they highlight "Modules".
 const isActive = (href: string) => path === href || path.startsWith(href);
 ---
 
