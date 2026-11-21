@@ -1,0 +1,215 @@
+---
+// Home page "Lab Setup" callout. The commands come from the Lab Setup page, so the two can't disagree.
+import Icon from './Icon.astro';
+import setup from '../content/docs/setup.mdx?raw';
+import { command } from '../data/excerpts';
+
+const launch = command(setup, 'multipass launch');
+const shell = command(setup, 'multipass shell');
+const oses = [
+	{ id: 'mac', label: 'macOS', install: [command(setup, 'brew install')] },
+	{ id: 'win', label: 'Windows', install: ['# Run the installer from canonical.com/multipass/install,', '# then use PowerShell for the rest.'] },
+	{ id: 'linux', label: 'Linux', install: [command(setup, 'sudo snap install')] },
+];
+---
+
+<div class="callout">
+	<div class="copy">
+		<span class="pf-eyebrow">Lab Setup</span>
+		<h2>One VM. Every tool, already installed.</h2>
+		<p class="pf-muted">
+			The labs run in a small Ubuntu 24.04 virtual machine on your own computer, made with Multipass. A setup file
+			installs step, step-ca, nginx, FreeRADIUS and the rest on first boot. Apart from Multipass itself, everything stays inside the VM.
+		</p>
+		<ul>
+			<li><Icon name="check" size="1rem" /> Works on macOS, Windows and Linux</li>
+			<li><Icon name="check" size="1rem" /> Snapshot it, break things, restore it</li>
+			<li><Icon name="check" size="1rem" /> About 2 GB of memory and 10 GB of disk</li>
+		</ul>
+		<a class="pf-btn pf-btn-primary" href="/setup/">Set up your lab <Icon name="arrow" /></a>
+	</div>
+
+	<div class="pf-terminal term" data-os-term>
+		<div class="pf-terminal-bar">
+			<span class="pf-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+			<div class="os-tabs" role="tablist" aria-label="Your operating system">
+				{
+					oses.map((o, i) => (
+						<button
+							type="button"
+							role="tab"
+							id={`os-tab-${o.id}`}
+							aria-controls={`os-panel-${o.id}`}
+							aria-selected={i === 0 ? 'true' : 'false'}
+							tabindex={i === 0 ? 0 : -1}
+						>
+							{o.label}
+						</button>
+					))
+				}
+			</div>
+		</div>
+		{
+			oses.map((o, i) => (
+				<div class="panel" role="tabpanel" id={`os-panel-${o.id}`} aria-labelledby={`os-tab-${o.id}`} hidden={i !== 0}>
+					<span class="step"># 1. Install Multipass</span>
+					{o.install.map((l) => (l.startsWith('#') ? <span class="note">{l}</span> : <code><span class="p">$</span> {l}</code>))}
+					<span class="step"># 2. Launch the lab VM (download cloud-init.yaml first)</span>
+					<code>
+						<span class="p">$</span> {launch}
+					</code>
+					<span class="step"># 3. Open a shell in it</span>
+					<code>
+						<span class="p">$</span> {shell}
+					</code>
+				</div>
+			))
+		}
+	</div>
+</div>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>('[data-os-term]')) {
+		const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+		const select = (tab: HTMLButtonElement, focus = false) => {
+			for (const t of tabs) {
+				const on = t === tab;
+				t.setAttribute('aria-selected', String(on));
+				t.tabIndex = on ? 0 : -1;
+				root.querySelector<HTMLElement>(`#${t.getAttribute('aria-controls')}`)!.hidden = !on;
+			}
+			if (focus) tab.focus();
+		};
+		for (const t of tabs) t.addEventListener('click', () => select(t));
+		root.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
+			const key = (e as KeyboardEvent).key;
+			const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+			if (key === 'ArrowRight') select(tabs[(i + 1) % tabs.length], true);
+			else if (key === 'ArrowLeft') select(tabs[(i - 1 + tabs.length) % tabs.length], true);
+			else return;
+			e.preventDefault();
+		});
+		// Start on the visitor's own system when it's easy to tell.
+		const ua = navigator.userAgent;
+		const guess = /Windows/.test(ua) ? 'win' : /Mac OS X/.test(ua) ? 'mac' : /Linux/.test(ua) && !/Android/.test(ua) ? 'linux' : '';
+		const start = tabs.find((t) => t.id === `os-tab-${guess}`);
+		if (start) select(start);
+	}
+</script>
+
+<style>
+	.callout {
+		display: grid;
+		gap: 2.5rem;
+		align-items: center;
+		padding: 1.25rem;
+		border: 1px solid var(--pf-border);
+		border-radius: var(--pf-radius-lg);
+		background:
+			radial-gradient(ellipse at 0% 0%, color-mix(in srgb, var(--pf-primary) 10%, transparent), transparent 60%),
+			var(--pf-card);
+	}
+	h2 {
+		margin-top: 0.75rem;
+		font-size: clamp(1.5rem, 3vw, 1.875rem);
+		font-weight: 700;
+		line-height: 1.2;
+		letter-spacing: -0.02em;
+		color: var(--sl-color-white);
+	}
+	.copy p {
+		margin-top: 0.75rem;
+		line-height: 1.7;
+	}
+	ul {
+		display: grid;
+		gap: 0.5rem;
+		margin: 1.25rem 0 1.75rem;
+		padding: 0;
+		list-style: none;
+		font-size: 0.9rem;
+	}
+	li {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin: 0;
+	}
+	li :global(svg) {
+		flex-shrink: 0;
+		color: var(--pf-primary);
+	}
+	.term {
+		min-width: 0;
+	}
+	.os-tabs {
+		display: flex;
+		gap: 0.25rem;
+	}
+	[role='tab'] {
+		border: 1px solid transparent;
+		border-radius: 0.4rem;
+		background: none;
+		color: #94a3b8;
+		padding: 0.2rem 0.6rem;
+		font: inherit;
+		cursor: pointer;
+	}
+	[role='tab']:hover {
+		color: #e2e8f0;
+	}
+	[role='tab'][aria-selected='true'] {
+		border-color: #334155;
+		background: #1e293b;
+		color: #6ee7b7;
+	}
+	[role='tab']:focus-visible {
+		outline: 2px solid #34d399;
+		outline-offset: 1px;
+	}
+	.panel {
+		display: flex;
+		flex-direction: column;
+		gap: 0.35rem;
+		padding: 1.25rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.78rem;
+		line-height: 1.6;
+	}
+	.panel[hidden] {
+		display: none;
+	}
+	.step {
+		margin-top: 0.6rem;
+		color: #94a3b8;
+	}
+	.step:first-child {
+		margin-top: 0;
+	}
+	.note {
+		color: #cbd5e1;
+	}
+	.panel code {
+		background: none;
+		padding: 0;
+		color: #f1f5f9;
+		font-size: inherit;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+	}
+	.p {
+		color: #34d399;
+		user-select: none;
+	}
+	@media (min-width: 40rem) {
+		.callout {
+			padding: 2rem;
+		}
+	}
+	@media (min-width: 64rem) {
+		.callout {
+			grid-template-columns: 5fr 7fr;
+			padding: 2.5rem;
+		}
+	}
+</style>

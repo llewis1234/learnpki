@@ -1,164 +1,368 @@
 ---
+// Chain-of-trust explorer on the home page. Pick a certificate to see what it is and where it lives in the lab.
+// Without JavaScript, every panel shows, one after the other.
 import Icon from './Icon.astro';
 
-/** The hero illustration: a root CA signs an intermediate CA, which signs a leaf certificate. */
 const nodes = [
-	{ icon: 'shield-check', title: 'Root CA', sub: 'Self-signed. Kept offline.', tag: 'Trusted', kind: 'root' },
-	{ icon: 'layers', title: 'Intermediate CA', sub: 'Signs certificates every day.', tag: 'CA', kind: 'mid' },
-	{ icon: 'certificate', title: 'Leaf certificate', sub: 'web.example.com', tag: 'Server', kind: 'leaf' },
+	{
+		id: 'root',
+		icon: 'shield-check',
+		title: 'Root CA',
+		tag: 'Trust anchor',
+		subject: 'Lab CA Root CA',
+		issuer: 'Lab CA Root CA (itself)',
+		validity: '10 years',
+		role: 'Clients trust the root because it is in their trust store, not because someone signed it. It signs the intermediate. In a real deployment its key stays offline.',
+		file: '$(step path)/certs/root_ca.crt',
+		href: '/guides/build-your-ca/',
+		module: 'Module 2',
+	},
+	{
+		id: 'mid',
+		icon: 'layers',
+		title: 'Intermediate CA',
+		tag: 'Issuing CA',
+		subject: 'Lab CA Intermediate CA',
+		issuer: 'Lab CA Root CA',
+		validity: '10 years',
+		role: 'step-ca signs every certificate with this key, so the root key can stay locked away. If the intermediate is lost, the root can replace it.',
+		file: '$(step path)/certs/intermediate_ca.crt',
+		href: '/guides/build-your-ca/',
+		module: 'Module 2',
+	},
+	{
+		id: 'leaf',
+		icon: 'certificate',
+		title: 'Leaf certificate',
+		tag: 'Server',
+		subject: 'web.example.com',
+		issuer: 'Lab CA Intermediate CA',
+		validity: '24 hours (the step-ca default)',
+		role: 'Proves a server is web.example.com. It cannot sign other certificates. Short lifetimes limit the damage if its key leaks.',
+		file: 'web.crt',
+		href: '/guides/issue-and-inspect/',
+		module: 'Module 3',
+	},
 ] as const;
 ---
 
-<figure class="chain">
-	<ol class="chain-list">
+<div class="explorer" data-chain>
+	<div class="nodes" role="tablist" aria-label="Certificates in the chain" aria-orientation="vertical">
 		{
 			nodes.map((n, i) => (
 				<>
 					{i > 0 && (
-						<li class="link" aria-hidden="true">
+						<span class="link" aria-hidden="true">
 							<span class="line" />
 							<span class="label">signs</span>
-						</li>
+						</span>
 					)}
-					<li class={`node ${n.kind}`}>
+					<button
+						type="button"
+						class={`node ${n.id}`}
+						role="tab"
+						id={`chain-tab-${n.id}`}
+						aria-controls={`chain-panel-${n.id}`}
+						aria-selected={i === 0 ? 'true' : 'false'}
+						tabindex={i === 0 ? 0 : -1}
+						disabled
+					>
 						<span class="tile">
 							<Icon name={n.icon} size="1.25rem" />
 						</span>
 						<span class="text">
 							<span class="title">{n.title}</span>
-							<span class="sub">{n.sub}</span>
+							<span class="sub">{n.subject}</span>
 						</span>
 						<span class="tag">{n.tag}</span>
-					</li>
+					</button>
 				</>
 			))
 		}
-	</ol>
-	<figcaption>
-		A chain of trust. Each certificate is signed by the one above it. Clients check every signature up to a root they
-		already trust.
-	</figcaption>
-</figure>
+	</div>
+
+	<div class="panels">
+		{
+			nodes.map((n) => (
+				<section class="pf-card panel" role="tabpanel" id={`chain-panel-${n.id}`} aria-labelledby={`chain-tab-${n.id}`}>
+					<h3>
+						<span class={`dot ${n.id}`} aria-hidden="true" />
+						{n.title}
+					</h3>
+					<p class="role">{n.role}</p>
+					<dl>
+						<div>
+							<dt>Subject</dt>
+							<dd>{n.subject}</dd>
+						</div>
+						<div>
+							<dt>Issuer</dt>
+							<dd>{n.issuer}</dd>
+						</div>
+						<div>
+							<dt>Valid for</dt>
+							<dd>{n.validity}</dd>
+						</div>
+						<div>
+							<dt>File in the lab</dt>
+							<dd>
+								<code>{n.file}</code>
+							</dd>
+						</div>
+					</dl>
+					<div class="inspect">
+						<span class="inspect-label">Look inside it</span>
+						<code>step certificate inspect {n.file} --short</code>
+					</div>
+					<a class="more" href={n.href}>
+						{n.module}: make this certificate <span aria-hidden="true">→</span>
+					</a>
+				</section>
+			))
+		}
+	</div>
+</div>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>('[data-chain]')) {
+		const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+		const select = (tab: HTMLButtonElement, focus = false) => {
+			for (const t of tabs) {
+				const on = t === tab;
+				t.setAttribute('aria-selected', String(on));
+				t.tabIndex = on ? 0 : -1;
+				root.querySelector<HTMLElement>(`#${t.getAttribute('aria-controls')}`)!.hidden = !on;
+			}
+			if (focus) tab.focus();
+		};
+		for (const t of tabs) {
+			t.disabled = false;
+			t.addEventListener('click', () => select(t));
+		}
+		root.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
+			const key = (e as KeyboardEvent).key;
+			const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+			if (key === 'ArrowDown' || key === 'ArrowRight') select(tabs[(i + 1) % tabs.length], true);
+			else if (key === 'ArrowUp' || key === 'ArrowLeft') select(tabs[(i - 1 + tabs.length) % tabs.length], true);
+			else return;
+			e.preventDefault();
+		});
+		root.classList.add('ready');
+		select(tabs[0]);
+	}
+</script>
 
 <style>
-	.chain {
-		margin: 0;
-		max-width: 26rem;
-		margin-inline: auto;
+	.explorer {
+		display: grid;
+		gap: 1.5rem;
+		align-items: start;
 	}
-	.chain-list {
-		list-style: none;
-		margin: 0;
-		padding: 0;
+	.nodes {
+		display: flex;
+		flex-direction: column;
 	}
 	.node {
+		--c: var(--pf-t-core);
 		display: flex;
 		align-items: center;
-		gap: 0.9rem;
+		gap: 0.85rem;
+		width: 100%;
+		padding: 0.9rem 1rem;
 		border: 1px solid var(--pf-border);
 		border-radius: var(--pf-radius);
 		background: var(--pf-card);
-		padding: 0.85rem 1rem;
+		color: inherit;
+		font: inherit;
+		text-align: start;
 		box-shadow: var(--pf-shadow);
 	}
-	.node.root {
-		border-color: color-mix(in oklab, var(--pf-primary) 55%, var(--pf-border));
-		background: color-mix(in oklab, var(--pf-primary) 10%, var(--pf-card));
-	}
 	.node.mid {
-		margin-inline-start: 1.5rem;
+		--c: var(--pf-t-mtls);
 	}
 	.node.leaf {
-		margin-inline-start: 3rem;
+		--c: var(--pf-t-eap);
+	}
+	/* Before the script runs the nodes are a static picture, so they don't look clickable. */
+	.ready .node {
+		cursor: pointer;
+	}
+	.ready .node:hover {
+		border-color: color-mix(in srgb, var(--c) 50%, var(--pf-border));
+	}
+	.ready .node[aria-selected='true'] {
+		border-color: var(--c);
+		background: color-mix(in srgb, var(--c) 8%, var(--pf-card));
+		box-shadow:
+			var(--pf-shadow),
+			0 0 0 1px var(--c);
+	}
+	.node:focus-visible {
+		outline: 2px solid var(--c);
+		outline-offset: 3px;
 	}
 	.tile {
 		display: grid;
-		place-items: center;
 		flex-shrink: 0;
+		place-items: center;
 		width: 2.5rem;
 		height: 2.5rem;
-		border-radius: 0.6rem;
-		background: color-mix(in oklab, var(--pf-primary) 16%, transparent);
-		color: var(--pf-primary);
-	}
-	.root .tile {
-		background: var(--pf-primary);
-		color: var(--pf-primary-fg);
+		border-radius: 0.65rem;
+		background: color-mix(in srgb, var(--c) 15%, transparent);
+		color: var(--c);
 	}
 	.text {
 		display: flex;
+		flex: 1;
 		flex-direction: column;
 		min-width: 0;
-		flex: 1;
 	}
 	.title {
-		font-family: var(--pf-font-display);
 		font-weight: 600;
 		color: var(--sl-color-white);
-		line-height: 1.3;
 	}
 	.sub {
-		font-size: 0.85rem;
-		color: var(--pf-muted);
-	}
-	.leaf .sub {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 		font-family: var(--sl-font-mono);
-		font-size: 0.8rem;
+		font-size: 0.75rem;
+		color: var(--pf-muted);
 	}
 	.tag {
 		flex-shrink: 0;
+		border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
 		border-radius: 999px;
-		background: var(--pf-secondary);
-		color: var(--pf-muted);
 		padding: 0.1rem 0.55rem;
-		font-size: 0.7rem;
-		font-weight: 500;
-	}
-	.root .tag {
-		background: color-mix(in oklab, var(--pf-primary) 20%, transparent);
-		color: var(--pf-accent-fg);
+		font-family: var(--sl-font-mono);
+		font-size: 0.68rem;
+		color: var(--c);
 	}
 	.link {
-		position: relative;
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		height: 2.25rem;
-	}
-	.link:nth-child(2) {
-		margin-inline-start: 1.25rem;
-	}
-	.link:nth-child(4) {
-		margin-inline-start: 2.75rem;
+		padding-inline-start: 2.2rem;
 	}
 	.line {
-		position: absolute;
-		inset-block: 0;
-		inset-inline-start: 1rem;
 		width: 2px;
-		background: linear-gradient(var(--pf-primary), color-mix(in oklab, var(--pf-primary) 35%, transparent));
-	}
-	.line::after {
-		content: '';
-		position: absolute;
-		bottom: -1px;
-		left: 50%;
-		width: 0.5rem;
-		height: 0.5rem;
-		border-right: 2px solid color-mix(in oklab, var(--pf-primary) 60%, transparent);
-		border-bottom: 2px solid color-mix(in oklab, var(--pf-primary) 60%, transparent);
-		transform: translateX(-50%) rotate(45deg);
+		height: 100%;
+		background: linear-gradient(var(--pf-border), var(--pf-primary), var(--pf-border));
 	}
 	.label {
-		position: absolute;
-		inset-inline-start: 1.75rem;
-		top: 50%;
-		transform: translateY(-50%);
 		font-family: var(--sl-font-mono);
-		font-size: 0.72rem;
-		color: var(--pf-primary);
-	}
-	figcaption {
-		margin-top: 1rem;
-		font-size: 0.8rem;
-		line-height: 1.5;
+		font-size: 0.7rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
 		color: var(--pf-muted);
+	}
+	.panels {
+		display: grid;
+		gap: 1rem;
+		min-width: 0;
+	}
+	.panel {
+		padding: 1.5rem;
+	}
+	.panel[hidden] {
+		display: none;
+	}
+	.panel h3 {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
+		margin: 0;
+		font-size: 1.15rem;
+		font-weight: 600;
+		color: var(--sl-color-white);
+	}
+	.dot {
+		width: 0.6rem;
+		height: 0.6rem;
+		border-radius: 999px;
+		background: var(--pf-t-core);
+	}
+	.dot.mid {
+		background: var(--pf-t-mtls);
+	}
+	.dot.leaf {
+		background: var(--pf-t-eap);
+	}
+	.role {
+		margin: 0.75rem 0 0;
+		font-size: 0.9rem;
+		line-height: 1.65;
+		color: var(--pf-muted);
+	}
+	dl {
+		display: grid;
+		gap: 0.75rem 1.5rem;
+		margin: 1.25rem 0 0;
+	}
+	dl div {
+		min-width: 0;
+	}
+	dt {
+		font-family: var(--sl-font-mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--pf-muted);
+	}
+	dd {
+		margin: 0.2rem 0 0;
+		font-size: 0.9rem;
+		font-weight: 500;
+		color: var(--sl-color-white);
+		overflow-wrap: anywhere;
+	}
+	dd code {
+		font-size: 0.8rem;
+	}
+	.inspect {
+		margin-top: 1.25rem;
+		border: 1px solid #1e293b;
+		border-radius: 0.6rem;
+		background: var(--pf-terminal);
+		padding: 0.75rem 0.9rem;
+	}
+	.inspect-label {
+		display: block;
+		margin-bottom: 0.3rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #94a3b8;
+	}
+	.inspect code {
+		background: none;
+		padding: 0;
+		font-size: 0.8rem;
+		color: #e2e8f0;
+		overflow-wrap: anywhere;
+	}
+	.more {
+		display: inline-block;
+		margin-top: 1.25rem;
+		font-size: 0.875rem;
+		font-weight: 600;
+		color: var(--sl-color-text-accent);
+		text-decoration: none;
+	}
+	.more:hover {
+		text-decoration: underline;
+	}
+	@media (min-width: 40rem) {
+		dl {
+			grid-template-columns: 1fr 1fr;
+		}
+	}
+	@media (min-width: 56rem) {
+		.explorer {
+			grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+			gap: 2.5rem;
+		}
 	}
 </style>

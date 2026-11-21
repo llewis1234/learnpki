@@ -1,0 +1,265 @@
+---
+// The home page terminal. Each tab shows a real command and real output lines from a lesson.
+import buildCa from '../content/docs/guides/build-your-ca.mdx?raw';
+import mtls from '../content/docs/guides/mtls-nginx.mdx?raw';
+import eap from '../content/docs/guides/eap-tls-freeradius.mdx?raw';
+import { excerpt } from '../data/excerpts';
+
+const tabs = [
+	{
+		id: 'ca',
+		label: '1. Build a CA',
+		title: 'Your first CA, in one command',
+		href: '/guides/build-your-ca/',
+		module: 'Module 2',
+		...excerpt(buildCa, 'step ca init', [/Root certificate:/, /Intermediate certificate:/]),
+	},
+	{
+		id: 'mtls',
+		label: '2. mTLS',
+		title: 'Call a service with a client certificate',
+		href: '/guides/mtls-nginx/',
+		module: 'Module 4',
+		...excerpt(mtls, 'curl --cacert root_ca.crt \\\n  --cert client.crt', [/^Hello, /]),
+	},
+	{
+		id: 'eap',
+		label: '3. EAP-TLS',
+		title: 'Join a network with a certificate',
+		href: '/guides/eap-tls-freeradius/',
+		module: 'Module 5',
+		...excerpt(eap, 'eapol_test -c eaptls.conf', [/CTRL-EVENT-EAP-METHOD/, /CTRL-EVENT-EAP-SUCCESS/, /^SUCCESS$/]),
+	},
+];
+
+/** Colours the parts of an output line: step's check mark, paths, and the final result. */
+function parts(line: string) {
+	if (line.startsWith('✔ ')) {
+		const [label, ...rest] = line.slice(2).split(': ');
+		return { mark: '✔', label: rest.length ? `${label}: ` : label, value: rest.join(': ') };
+	}
+	return { mark: '', label: line, value: '' };
+}
+---
+
+<div class="pf-terminal hero-term" data-hero-term>
+	<div class="pf-terminal-bar">
+		<span class="bar-left">
+			<span class="pf-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+			<span class="bar-title" data-term-title>{tabs[0].title}</span>
+		</span>
+		<button type="button" class="pf-copy" data-copy hidden>Copy</button>
+	</div>
+	<div class="tabs" role="tablist" aria-label="Example labs">
+		{
+			tabs.map((t, i) => (
+				<button
+					type="button"
+					role="tab"
+					id={`term-tab-${t.id}`}
+					aria-controls={`term-panel-${t.id}`}
+					aria-selected={i === 0 ? 'true' : 'false'}
+					tabindex={i === 0 ? 0 : -1}
+					data-title={t.title}
+				>
+					{t.label}
+				</button>
+			))
+		}
+	</div>
+	{
+		tabs.map((t, i) => (
+			<div class="panel" role="tabpanel" id={`term-panel-${t.id}`} aria-labelledby={`term-tab-${t.id}`} hidden={i !== 0}>
+				<div class="cmd">
+					<span class="prompt" aria-hidden="true">$</span>
+					<pre data-command>{t.command}</pre>
+				</div>
+				<div class="out">
+					<span class="out-label">Expected output (excerpt)</span>
+					{t.lines.map((l) => {
+						const p = parts(l);
+						return (
+							<div class:list={['line', { ok: l === 'SUCCESS' }]}>
+								{p.mark && <span class="mark">{p.mark}</span>}
+								<span>
+									{p.label}
+									{p.value && <span class="value">{p.value}</span>}
+								</span>
+							</div>
+						);
+					})}
+				</div>
+				<a class="more" href={t.href}>
+					{t.module}: run it yourself <span aria-hidden="true">→</span>
+				</a>
+			</div>
+		))
+	}
+</div>
+
+<script>
+	for (const root of document.querySelectorAll<HTMLElement>('[data-hero-term]')) {
+		const tabs = [...root.querySelectorAll<HTMLButtonElement>('[role="tab"]')];
+		const title = root.querySelector<HTMLElement>('[data-term-title]')!;
+		const copy = root.querySelector<HTMLButtonElement>('[data-copy]')!;
+
+		const select = (tab: HTMLButtonElement, focus = false) => {
+			for (const t of tabs) {
+				const on = t === tab;
+				t.setAttribute('aria-selected', String(on));
+				t.tabIndex = on ? 0 : -1;
+				root.querySelector<HTMLElement>(`#${t.getAttribute('aria-controls')}`)!.hidden = !on;
+			}
+			title.textContent = tab.dataset.title ?? '';
+			if (focus) tab.focus();
+		};
+
+		root.addEventListener('click', (e) => {
+			const tab = (e.target as Element).closest<HTMLButtonElement>('[role="tab"]');
+			if (tab) select(tab);
+		});
+		// Arrow keys move between tabs, as in any tab list.
+		root.querySelector('[role="tablist"]')!.addEventListener('keydown', (e) => {
+			const key = (e as KeyboardEvent).key;
+			const i = tabs.findIndex((t) => t.getAttribute('aria-selected') === 'true');
+			if (key === 'ArrowRight') select(tabs[(i + 1) % tabs.length], true);
+			else if (key === 'ArrowLeft') select(tabs[(i - 1 + tabs.length) % tabs.length], true);
+			else return;
+			e.preventDefault();
+		});
+
+		// Copy needs the Clipboard API, so the button only shows when it's there.
+		if (navigator.clipboard) {
+			copy.hidden = false;
+			copy.addEventListener('click', async () => {
+				const panel = root.querySelector<HTMLElement>('[role="tabpanel"]:not([hidden])')!;
+				try {
+					await navigator.clipboard.writeText(panel.querySelector('[data-command]')!.textContent ?? '');
+					copy.textContent = 'Copied';
+				} catch {
+					copy.textContent = 'Copy failed';
+				}
+				setTimeout(() => (copy.textContent = 'Copy'), 1500);
+			});
+		}
+	}
+</script>
+
+<style>
+	.hero-term {
+		min-width: 0;
+	}
+	.bar-left {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+	.bar-title {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+	.tabs {
+		display: flex;
+		gap: 0.25rem;
+		overflow-x: auto;
+		padding: 0.5rem 0.9rem 0;
+		border-bottom: 1px solid rgb(30 41 59 / 0.8);
+		background: rgb(15 23 42 / 0.4);
+		scrollbar-width: none;
+	}
+	[role='tab'] {
+		border: 0;
+		border-bottom: 2px solid transparent;
+		border-radius: 0.5rem 0.5rem 0 0;
+		background: none;
+		color: #94a3b8;
+		padding: 0.45rem 0.75rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.75rem;
+		white-space: nowrap;
+		cursor: pointer;
+	}
+	[role='tab']:hover {
+		color: #e2e8f0;
+	}
+	[role='tab'][aria-selected='true'] {
+		border-bottom-color: #34d399;
+		background: rgb(2 6 23 / 0.6);
+		color: #6ee7b7;
+	}
+	[role='tab']:focus-visible {
+		outline: 2px solid #34d399;
+		outline-offset: -2px;
+	}
+	.panel {
+		display: flex;
+		flex-direction: column;
+		gap: 1rem;
+		min-height: 15.5rem;
+		padding: 1.25rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.8rem;
+	}
+	.panel[hidden] {
+		display: none;
+	}
+	.cmd {
+		display: flex;
+		gap: 0.6rem;
+	}
+	.prompt {
+		color: #34d399;
+		user-select: none;
+	}
+	.cmd pre {
+		margin: 0;
+		background: none;
+		border: 0;
+		padding: 0;
+		color: #f1f5f9;
+		font: inherit;
+		line-height: 1.6;
+		white-space: pre-wrap;
+		word-break: break-all;
+	}
+	.out {
+		border-top: 1px solid rgb(30 41 59 / 0.8);
+		padding-top: 0.75rem;
+	}
+	.out-label {
+		display: block;
+		margin-bottom: 0.5rem;
+		font-size: 0.68rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: #94a3b8;
+	}
+	.line {
+		display: flex;
+		gap: 0.5rem;
+		color: #cbd5e1;
+		line-height: 1.6;
+		word-break: break-all;
+	}
+	.mark,
+	.ok {
+		color: #34d399;
+	}
+	.value {
+		color: #7dd3fc;
+	}
+	.more {
+		margin-top: auto;
+		align-self: flex-start;
+		font-family: var(--sl-font);
+		font-size: 0.8rem;
+		font-weight: 600;
+		color: #6ee7b7;
+		text-decoration: none;
+	}
+	.more:hover {
+		text-decoration: underline;
+	}
+</style>

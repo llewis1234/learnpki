@@ -3,7 +3,7 @@
 // topic, level, or minutes. Commit the new PNG files.
 //
 // The text uses the fonts installed on your machine. For the closest match to the
-// site, install Space Grotesk and DM Sans first. Other fonts are fallbacks.
+// site, install Inter and JetBrains Mono first. Other fonts are fallbacks.
 
 import { readdir, readFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
@@ -54,24 +54,31 @@ function svg({ kicker, title, meta }) {
 	for (let x = 0; x <= W; x += 48) grid.push(`<path d="M${x} 0V${H}"/>`);
 	for (let y = 0; y <= H; y += 48) grid.push(`<path d="M0 ${y}H${W}"/>`);
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
-	<rect width="${W}" height="${H}" fill="#121826"/>
-	<g stroke="#3b82f6" stroke-opacity="0.07" stroke-width="1">${grid.join('')}</g>
-	<rect x="0" y="0" width="12" height="${H}" fill="#3b82f6"/>
+	<defs>
+		<radialGradient id="glow" cx="0.25" cy="0.3" r="0.6">
+			<stop offset="0" stop-color="#10b981" stop-opacity="0.16"/>
+			<stop offset="1" stop-color="#10b981" stop-opacity="0"/>
+		</radialGradient>
+	</defs>
+	<rect width="${W}" height="${H}" fill="#070b12"/>
+	<rect width="${W}" height="${H}" fill="url(#glow)"/>
+	<g stroke="#38bdf8" stroke-opacity="0.06" stroke-width="1">${grid.join('')}</g>
+	<rect x="0" y="0" width="12" height="${H}" fill="#10b981"/>
 	<g transform="translate(80 64) scale(1.75)">
-		<rect width="32" height="32" rx="8" fill="#3b82f6"/>
-		<path d="M16 6.5 8.5 9.3v6.2c0 4.8 3.2 8.6 7.5 10 4.3-1.4 7.5-5.2 7.5-10V9.3L16 6.5Z" fill="none" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
-		<path d="m12.4 16 2.6 2.6 4.8-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+		<rect x="0.5" y="0.5" width="31" height="31" rx="7.5" fill="#10b981" fill-opacity="0.15" stroke="#10b981" stroke-opacity="0.4"/>
+		<path d="M16 6.5 8.5 9.3v6.2c0 4.8 3.2 8.6 7.5 10 4.3-1.4 7.5-5.2 7.5-10V9.3L16 6.5Z" fill="none" stroke="#34d399" stroke-width="2" stroke-linejoin="round"/>
+		<path d="m12.4 16 2.6 2.6 4.8-5" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 	</g>
-	<text x="152" y="108" font-family="Space Grotesk, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="36" font-weight="700" fill="#f1f5f9">${esc(SITE_NAME)}</text>
-	<text x="80" y="${titleY - size}" font-family="JetBrains Mono, Menlo, DejaVu Sans Mono, monospace" font-size="26" fill="#7fa8f5">${esc(kicker)}</text>
+	<text x="152" y="108" font-family="Inter, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="36" font-weight="700" fill="#f1f5f9">${esc(SITE_NAME)}</text>
+	<text x="80" y="${titleY - size}" font-family="JetBrains Mono, Menlo, DejaVu Sans Mono, monospace" font-size="26" fill="#34d399">${esc(kicker)}</text>
 	${lines
 		.map(
 			(l, i) =>
-				`<text x="80" y="${titleY + i * size * 1.1 + 20}" font-family="Space Grotesk, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="${size}" font-weight="700" fill="#ffffff">${esc(l)}</text>`,
+				`<text x="80" y="${titleY + i * size * 1.1 + 20}" font-family="Inter, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="${size}" font-weight="700" fill="#f1f5f9">${esc(l)}</text>`,
 		)
 		.join('\n\t')}
-	<text x="80" y="560" font-family="DM Sans, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="28" fill="#a3b1c6">${esc(meta)}</text>
-	<text x="${W - 80}" y="560" text-anchor="end" font-family="DM Sans, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="28" font-weight="600" fill="#7fa8f5">${esc(host)}</text>
+	<text x="80" y="560" font-family="Inter, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="28" fill="#94a3b8">${esc(meta)}</text>
+	<text x="${W - 80}" y="560" text-anchor="end" font-family="Inter, Helvetica Neue, DejaVu Sans, Arial, sans-serif" font-size="28" font-weight="600" fill="#34d399">${esc(host)}</text>
 </svg>`;
 }
 

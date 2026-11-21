@@ -11,9 +11,12 @@
 
 ## Look and feel
 
-- "Cloud White" palette with a blue accent, tokens in `src/styles/custom.css` (Starlight `--sl-*` variables plus site `--pf-*` tokens). Keep light and dark modes in step.
-- Space Grotesk headings, DM Sans body, JetBrains Mono for code. Fonts are self-hosted via `@fontsource-variable/*`.
-- Code blocks are always dark (Expressive Code `github-dark`).
+- Dark-first "obsidian" palette with an emerald accent, plus a matching light mode. Tokens are in `src/styles/custom.css` (Starlight `--sl-*` variables plus site `--pf-*` tokens). Keep light and dark modes in step, and keep every text colour at WCAG AA (4.5:1) or better.
+- Each track has an accent colour (`--pf-t-core`, `--pf-t-mtls`, `--pf-t-eap`, `--pf-t-ops`, `--pf-t-ssh`), set per track in `src/data/lessons.ts`.
+- Inter for text and headings, JetBrains Mono for code, labels and small mono eyebrows. Fonts are self-hosted via `@fontsource-variable/*`. No font CDNs, no Tailwind.
+- Code blocks and terminal panels (`.pf-terminal`) are always dark (Expressive Code `github-dark`).
+- The home page shows only real commands and output. `src/data/excerpts.ts` pulls them from the lesson and Lab Setup files at build time, and the build fails if one no longer matches. Do not add simulated output.
+- Logos: `src/assets/logo.svg` (dark mode) and `src/assets/logo-light.svg`. After a colour or title change, run `npm run og` to remake the social preview images.
 
 ## Site structure
 

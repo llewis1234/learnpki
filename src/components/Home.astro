@@ -1,22 +1,30 @@
 ---
 import Icon from './Icon.astro';
+import HeroTerminal from './HeroTerminal.astro';
 import ChainOfTrust from './ChainOfTrust.astro';
+import LabCallout from './LabCallout.astro';
 import { SITE_NAME } from '../../site.config.mjs';
 import { getLessons, tracks } from '../data/lessons';
 
 // Each track card links to the track's first module and shows how many modules it has.
 const lessons = await getLessons();
-const trackCards = tracks.map((t) => {
+const trackCards = tracks.map((t, i) => {
 	const items = lessons.filter((l) => l.data.track === t.name);
-	return { ...t, count: items.length, href: items[0]?.href ?? '/path/' };
+	return { ...t, number: String(i + 1).padStart(2, '0'), count: items.length, href: items[0]?.href ?? '/path/' };
 });
+const facts = [
+	{ value: String(lessons.length), label: 'modules' },
+	{ value: String(tracks.length), label: 'tracks' },
+	{ value: 'Ubuntu 24.04', label: 'lab VM' },
+	{ value: 'Free', label: 'no account needed' },
+];
 ---
 
 <div class="pf-wide home not-content">
 	<section class="hero">
 		<div class="hero-copy">
-			<span class="badge"><Icon name="terminal" class="badge-icon" /> Free · Open-source tools · No experience needed</span>
-			<h1 id="_top">Learn certificates by <span class="hl">building</span> them.</h1>
+			<span class="eyebrow"><span class="pulse" aria-hidden="true"></span> Free · Open-source tools · No experience needed</span>
+			<h1 id="_top">Learn certificates by <span class="hl">building them.</span></h1>
 			<p class="lede">
 				Whether you're curious, studying, or managing systems, {SITE_NAME} walks you from “what is a certificate?” to
 				running your own <a href="/glossary/#ca-certificate-authority">certificate authority (CA)</a>: the service that
@@ -26,45 +34,87 @@ const trackCards = tracks.map((t) => {
 				<a class="pf-btn pf-btn-primary" href="/path/">Start the path <Icon name="arrow" /></a>
 				<a class="pf-btn" href="/guides/">Browse all modules</a>
 			</div>
+			<dl class="facts">
+				{
+					facts.map((f) => (
+						<div>
+							<dt>{f.label}</dt>
+							<dd>{f.value}</dd>
+						</div>
+					))
+				}
+			</dl>
 		</div>
-		<div class="hero-art">
-			<ChainOfTrust />
-		</div>
+		<HeroTerminal />
 	</section>
 
-	<section class="tracks">
-		<h2>Five tracks, one CA</h2>
+	<section class="section" aria-labelledby="tracks-heading">
+		<span class="pf-eyebrow">Curriculum</span>
+		<h2 id="tracks-heading">Five tracks, one CA</h2>
 		<p class="pf-muted intro">
-			Each track mixes short explanations with labs you run yourself. Every track uses the CA you build in Core. Follow them in order, or jump to what you need.
+			Each track mixes short explanations with labs you run yourself. Every track uses the CA you build in Core. Follow
+			them in order, or jump to what you need.
 		</p>
 		<div class="track-grid">
 			{
 				trackCards.map((t) => (
-					<a class="pf-card track" href={t.href}>
-						<span class="track-tile">
-							<Icon name={t.icon} size="1.35rem" />
+					<a class="pf-card track" href={t.href} style={`--tc: ${t.color}`}>
+						<span class="track-top">
+							<span class="track-tile">
+								<Icon name={t.icon} size="1.35rem" />
+							</span>
+							<span class="track-num">Track {t.number}</span>
 						</span>
 						<h3>{t.name}</h3>
 						<p class="pf-muted">{t.text}</p>
-						<span class="track-foot">
+						<ul class="tags" aria-label="Tools and topics">
+							{t.tags.map((tag) => (
+								<li>{tag}</li>
+							))}
+						</ul>
+						<span class="track-btn">
+							<span>
+								Start track <Icon name="arrow" />
+							</span>
 							<span class="count">
 								{t.count} {t.count === 1 ? 'module' : 'modules'}
-							</span>
-							<span class="start">
-								Start <Icon name="arrow" />
 							</span>
 						</span>
 					</a>
 				))
 			}
+			<a class="track path-card" href="/path/">
+				<span class="track-tile">
+					<Icon name="route" size="1.35rem" />
+				</span>
+				<h3>Not sure where to start?</h3>
+				<p class="pf-muted">
+					The Learning Path puts all {lessons.length} modules in order and shows what each one needs first. It also keeps
+					track of what you've finished.
+				</p>
+				<span class="track-btn">
+					<span>
+						Open the Learning Path <Icon name="arrow" />
+					</span>
+				</span>
+			</a>
 		</div>
-		<div class="cta">
-			<div>
-				<h3>New to the command line?</h3>
-				<p class="pf-muted">Lab Setup walks you through installing everything on Linux, macOS or Windows.</p>
-			</div>
-			<a href="/setup/">Set up your lab <Icon name="arrow" /></a>
+	</section>
+
+	<section class="section" aria-labelledby="chain-heading">
+		<span class="pf-eyebrow">Interactive guide</span>
+		<h2 id="chain-heading">Explore a chain of trust</h2>
+		<p class="pf-muted intro">
+			Every certificate is signed by the one above it. A client checks each signature up to a root it already trusts.
+			These are the three certificates you make in the first modules. Pick one to see what it does.
+		</p>
+		<div class="chain-wrap">
+			<ChainOfTrust />
 		</div>
+	</section>
+
+	<section class="section last">
+		<LabCallout />
 	</section>
 </div>
 
@@ -82,43 +132,88 @@ const trackCards = tracks.map((t) => {
 		isolation: isolate;
 	}
 	/* The grid fades out toward every edge instead of ending in a hard line. */
-	.hero::before {
+	.hero::before,
+	.hero::after {
 		content: '';
 		position: absolute;
 		inset: 0;
 		z-index: -1;
+		pointer-events: none;
+	}
+	.hero::before {
 		background-image:
 			linear-gradient(var(--pf-grid-line) 1px, transparent 1px),
 			linear-gradient(90deg, var(--pf-grid-line) 1px, transparent 1px);
-		background-size: 32px 32px;
+		background-size: 40px 40px;
 		-webkit-mask-image: radial-gradient(ellipse closest-side at 50% 45%, #000 30%, transparent 100%);
 		mask-image: radial-gradient(ellipse closest-side at 50% 45%, #000 30%, transparent 100%);
-		pointer-events: none;
 	}
-	.badge {
+	.hero::after {
+		background: radial-gradient(
+			ellipse 50% 45% at 30% 30%,
+			color-mix(in srgb, var(--pf-primary) 12%, transparent),
+			transparent 70%
+		);
+	}
+	.eyebrow {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		border: 1px solid var(--pf-border);
+		gap: 0.6rem;
+		border: 1px solid color-mix(in srgb, var(--pf-primary) 30%, var(--pf-border));
 		border-radius: 999px;
-		background: var(--pf-card);
-		padding: 0.25rem 0.75rem;
-		font-size: 0.75rem;
-		font-weight: 500;
-		color: var(--pf-muted);
+		background: color-mix(in srgb, var(--pf-primary) 8%, var(--pf-card));
+		padding: 0.3rem 0.85rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.72rem;
+		color: var(--pf-accent-fg);
 	}
-	.badge :global(.badge-icon) {
-		color: var(--pf-primary);
+	.pulse {
+		position: relative;
+		width: 0.5rem;
+		height: 0.5rem;
+		border-radius: 999px;
+		background: var(--pf-primary);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.pulse::after {
+			content: '';
+			position: absolute;
+			inset: 0;
+			border-radius: inherit;
+			background: inherit;
+			animation: pulse 2s ease-out infinite;
+		}
+	}
+	@keyframes pulse {
+		from {
+			opacity: 0.7;
+			transform: scale(1);
+		}
+		to {
+			opacity: 0;
+			transform: scale(2.6);
+		}
 	}
 	h1 {
 		margin-top: 1.5rem;
-		font-size: clamp(2.5rem, 7vw, 3.75rem);
-		font-weight: 700;
+		font-size: clamp(2.5rem, 6.5vw, 3.9rem);
+		font-weight: 800;
 		line-height: 1.05;
+		letter-spacing: -0.035em;
 		color: var(--sl-color-white);
 	}
 	.hl {
-		color: var(--pf-primary);
+		background: var(--pf-gradient);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	/* Windows High Contrast and similar modes ignore background images, so show plain text there. */
+	@media (forced-colors: active) {
+		.hl {
+			background: none;
+			color: CanvasText;
+		}
 	}
 	.lede {
 		margin-top: 1.5rem;
@@ -138,21 +233,50 @@ const trackCards = tracks.map((t) => {
 		gap: 0.75rem;
 		margin-top: 2rem;
 	}
-	.hero-art {
-		min-width: 0;
+	.facts {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1.25rem 2rem;
+		margin: 2.5rem 0 0;
+		padding-top: 1.5rem;
+		border-top: 1px solid var(--pf-border);
 	}
-	.tracks {
-		padding: 4rem 0 1rem;
+	.facts div {
+		display: flex;
+		flex-direction: column-reverse;
 	}
-	.tracks h2 {
-		font-size: 1.875rem;
+	.facts dt {
+		font-family: var(--sl-font-mono);
+		font-size: 0.7rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--pf-muted);
+	}
+	.facts dd {
+		margin: 0;
+		font-size: 1.25rem;
+		font-weight: 700;
+		letter-spacing: -0.02em;
+		color: var(--sl-color-white);
+	}
+	.section {
+		padding: 4.5rem 0 0;
+	}
+	.section.last {
+		padding-bottom: 1rem;
+	}
+	.section h2 {
+		margin-top: 0.6rem;
+		font-size: clamp(1.6rem, 3.5vw, 2.1rem);
 		line-height: 1.2;
 		font-weight: 700;
+		letter-spacing: -0.025em;
 		color: var(--sl-color-white);
 	}
 	.intro {
-		margin-top: 0.5rem;
-		max-width: 40rem;
+		margin-top: 0.75rem;
+		max-width: 42rem;
+		line-height: 1.7;
 	}
 	.track-grid {
 		display: grid;
@@ -160,6 +284,7 @@ const trackCards = tracks.map((t) => {
 		margin-top: 2.5rem;
 	}
 	.track {
+		--tc: var(--pf-primary);
 		display: flex;
 		flex-direction: column;
 		padding: 1.5rem;
@@ -173,35 +298,48 @@ const trackCards = tracks.map((t) => {
 				border-color 0.15s,
 				box-shadow 0.15s;
 		}
+		.track:hover {
+			transform: translateY(-3px);
+		}
 	}
 	.track:hover {
-		transform: translateY(-3px);
-		border-color: color-mix(in oklab, var(--pf-primary) 45%, var(--pf-border));
+		border-color: color-mix(in srgb, var(--tc) 55%, var(--pf-border));
 		box-shadow:
 			var(--pf-shadow),
-			0 12px 28px -16px color-mix(in oklab, var(--pf-primary) 55%, transparent);
+			0 14px 32px -18px color-mix(in srgb, var(--tc) 70%, transparent);
 	}
 	.track:focus-visible {
-		outline: 2px solid var(--pf-primary);
+		outline: 2px solid var(--tc);
 		outline-offset: 3px;
+	}
+	.track-top {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 	.track-tile {
 		display: grid;
 		place-items: center;
 		width: 2.75rem;
 		height: 2.75rem;
-		border-radius: 0.7rem;
-		background: color-mix(in oklab, var(--pf-primary) 16%, transparent);
-		color: var(--pf-primary);
+		border: 1px solid color-mix(in srgb, var(--tc) 30%, transparent);
+		border-radius: 0.75rem;
+		background: color-mix(in srgb, var(--tc) 14%, transparent);
+		color: var(--tc);
 	}
-	.track:hover .track-tile {
-		background: var(--pf-primary);
-		color: var(--pf-primary-fg);
+	.track-num {
+		border: 1px solid var(--pf-border);
+		border-radius: 999px;
+		padding: 0.15rem 0.6rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.7rem;
+		color: var(--pf-muted);
 	}
 	.track h3 {
-		margin-top: 1rem;
+		margin-top: 1.1rem;
 		font-size: 1.25rem;
-		font-weight: 600;
+		font-weight: 700;
+		letter-spacing: -0.015em;
 		color: var(--sl-color-white);
 	}
 	.track p {
@@ -209,79 +347,86 @@ const trackCards = tracks.map((t) => {
 		font-size: 0.875rem;
 		line-height: 1.65;
 	}
-	.track-foot {
+	.tags {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.4rem;
+		margin: 1rem 0 0;
+		padding: 0;
+		list-style: none;
+	}
+	.tags li {
+		margin: 0;
+		border-radius: 0.4rem;
+		background: var(--pf-secondary);
+		padding: 0.15rem 0.5rem;
+		font-family: var(--sl-font-mono);
+		font-size: 0.7rem;
+		color: var(--pf-muted);
+	}
+	.track-btn {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.5rem;
 		margin-top: auto;
-		padding-top: 1.25rem;
-		font-size: 0.8rem;
-	}
-	.count {
-		color: var(--pf-muted);
-	}
-	.start {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.3rem;
-		font-weight: 600;
-		color: var(--sl-color-text-accent);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.start :global(svg) {
-			transition: transform 0.15s;
-		}
-	}
-	.track:hover .start :global(svg) {
-		transform: translateX(3px);
-	}
-	.cta {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		margin-top: 3rem;
-		padding: 1.5rem;
+		padding: 0.6rem 0.9rem;
 		border: 1px solid var(--pf-border);
-		border-radius: var(--pf-radius);
-		background: var(--pf-accent-bg);
-	}
-	.cta h3 {
-		font-size: 1.125rem;
+		border-radius: 0.6rem;
+		background: var(--pf-raised);
+		font-size: 0.85rem;
 		font-weight: 600;
 		color: var(--sl-color-white);
 	}
-	.cta p {
-		margin: 0;
-		font-size: 0.875rem;
+	.tags + .track-btn,
+	p + .track-btn {
+		margin-top: 1.5rem;
 	}
-	.cta a {
+	.track-btn > span:first-child {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.25rem;
-		font-weight: 500;
-		color: var(--pf-accent-fg);
-		text-decoration: none;
+		gap: 0.35rem;
 	}
-	@media (min-width: 50rem) {
-		.track-grid {
-			grid-template-columns: repeat(3, 1fr);
+	.track:hover .track-btn {
+		border-color: color-mix(in srgb, var(--tc) 45%, var(--pf-border));
+		color: var(--tc);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.track-btn :global(svg) {
+			transition: transform 0.15s;
 		}
 	}
-	@media (min-width: 72rem) {
+	.track:hover .track-btn :global(svg) {
+		transform: translateX(3px);
+	}
+	.count {
+		font-weight: 500;
+		font-size: 0.78rem;
+		color: var(--pf-muted);
+	}
+	.path-card {
+		border: 1px dashed color-mix(in srgb, var(--pf-primary) 45%, var(--pf-border));
+		border-radius: var(--pf-radius);
+		background: color-mix(in srgb, var(--pf-primary) 5%, transparent);
+	}
+	.path-card h3 {
+		margin-top: 1.1rem;
+	}
+	.chain-wrap {
+		margin-top: 2.5rem;
+	}
+	@media (min-width: 44rem) {
 		.track-grid {
-			grid-template-columns: repeat(5, 1fr);
+			grid-template-columns: repeat(2, 1fr);
 		}
 	}
 	@media (min-width: 64rem) {
-		.hero {
-			grid-template-columns: 1fr 1fr;
-			padding-block: 5.5rem;
+		.track-grid {
+			grid-template-columns: repeat(3, 1fr);
 		}
-		.hero-art {
-			padding-inline-start: 2rem;
+		.hero {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			padding-block: 5rem;
 		}
 	}
 </style>

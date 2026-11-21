@@ -1,83 +1,108 @@
 /*
- * Site theme: "Cloud White" light palette with a blue accent, plus a matching dark mode.
+ * Site theme: dark-first "obsidian" palette with an emerald accent, plus a matching light mode.
+ * Each track has its own accent colour (`--pf-t-*`). Every text colour passes WCAG AA (4.5:1) on
+ * the page, card and raised surfaces in its theme.
  * Starlight variables are mapped first; `--pf-*` tokens are used by the site's own components.
  */
 
 /* Dark (Starlight's default `:root`) */
 :root {
-	--sl-font: 'DM Sans Variable', ui-sans-serif, system-ui, sans-serif;
+	--sl-font: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 	--sl-font-mono: 'JetBrains Mono Variable', ui-monospace, monospace;
-	--pf-font-display: 'Space Grotesk Variable', ui-sans-serif, system-ui, sans-serif;
+	--pf-font-display: var(--sl-font);
+	--sl-nav-height: 4rem;
 
-	--sl-color-white: oklch(0.96 0.005 250);
-	--sl-color-gray-1: oklch(0.9 0.01 250);
-	--sl-color-gray-2: oklch(0.82 0.015 252);
-	--sl-color-gray-3: oklch(0.7 0.02 255);
-	--sl-color-gray-4: oklch(0.52 0.025 257);
-	--sl-color-gray-5: oklch(0.34 0.025 258);
-	--sl-color-gray-6: oklch(0.25 0.025 260);
-	--sl-color-black: oklch(0.2 0.02 260);
-	--sl-color-accent-low: oklch(0.3 0.08 260);
-	--sl-color-accent: oklch(0.7 0.16 258);
-	--sl-color-accent-high: oklch(0.86 0.07 255);
-	--sl-color-bg: oklch(0.18 0.02 260);
-	--sl-color-bg-nav: color-mix(in oklab, oklch(0.18 0.02 260) 85%, transparent);
-	--sl-color-bg-sidebar: oklch(0.18 0.02 260);
-	--sl-color-hairline: oklch(0.3 0.025 258);
-	--sl-color-hairline-light: oklch(0.34 0.025 258);
-	--sl-color-hairline-shade: oklch(0.3 0.025 258);
+	--sl-color-white: #f1f5f9;
+	--sl-color-gray-1: #e2e8f0;
+	--sl-color-gray-2: #cbd5e1;
+	--sl-color-gray-3: #94a3b8;
+	--sl-color-gray-4: #64748b;
+	--sl-color-gray-5: #334155;
+	--sl-color-gray-6: #1e293b;
+	--sl-color-black: #0e1522;
+	--sl-color-accent-low: #064e3b;
+	--sl-color-accent: #10b981;
+	--sl-color-accent-high: #6ee7b7;
+	--sl-color-bg: #070b12;
+	--sl-color-bg-nav: color-mix(in srgb, #070b12 85%, transparent);
+	--sl-color-bg-sidebar: #070b12;
+	--sl-color-hairline: #1e293b;
+	--sl-color-hairline-light: #1e293b;
+	--sl-color-hairline-shade: #0e1522;
 
-	--pf-card: oklch(0.22 0.022 260);
-	--pf-border: oklch(0.32 0.025 258);
-	--pf-muted: oklch(0.72 0.02 255);
-	--pf-secondary: oklch(0.27 0.025 260);
-	--pf-primary: oklch(0.7 0.16 258);
-	--pf-primary-fg: oklch(0.18 0.02 260);
-	--pf-accent-bg: oklch(0.27 0.06 260);
-	--pf-accent-fg: oklch(0.86 0.07 255);
-	--pf-success: oklch(0.72 0.15 155);
-	--pf-warning: oklch(0.8 0.14 75);
-	--pf-code: oklch(0.15 0.02 260);
-	--pf-shadow: 0 1px 2px oklch(0 0 0 / 0.2), 0 8px 24px -12px oklch(0 0 0 / 0.5);
-	--pf-grid-line: color-mix(in oklab, var(--pf-primary) 7%, transparent);
+	--pf-card: #0e1522;
+	--pf-raised: #151f32;
+	--pf-border: #1e293b;
+	--pf-muted: #94a3b8;
+	--pf-secondary: #151f32;
+	--pf-primary: #10b981;
+	--pf-primary-fg: #052e16;
+	--pf-primary-hover: #34d399;
+	--pf-accent-bg: color-mix(in srgb, #10b981 10%, #0e1522);
+	--pf-accent-fg: #6ee7b7;
+	--pf-success: #34d399;
+	--pf-warning: #fbbf24;
+	--pf-code: #020617;
+	--pf-terminal: #020617;
+	--pf-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+	--pf-glow: 0 0 40px -10px rgb(16 185 129 / 0.28);
+	--pf-grid-line: rgb(56 189 248 / 0.05);
+	--pf-gradient: linear-gradient(90deg, #34d399, #38bdf8);
 	--pf-radius: 0.75rem;
+	--pf-radius-lg: 1rem;
+
+	/* Track accents: Core, mTLS, EAP-TLS, Operate, SSH */
+	--pf-t-core: #10b981;
+	--pf-t-mtls: #38bdf8;
+	--pf-t-eap: #a78bfa;
+	--pf-t-ops: #fbbf24;
+	--pf-t-ssh: #fb7185;
 }
 
 /* Light */
 :root[data-theme='light'] {
-	--sl-color-white: oklch(0.24 0.03 258);
-	--sl-color-gray-1: oklch(0.3 0.03 258);
-	--sl-color-gray-2: oklch(0.36 0.03 258);
-	--sl-color-gray-3: oklch(0.52 0.03 257);
-	--sl-color-gray-4: oklch(0.68 0.025 256);
-	--sl-color-gray-5: oklch(0.9 0.01 250);
-	--sl-color-gray-6: oklch(0.94 0.008 250);
-	--sl-color-gray-7: oklch(0.97 0.004 250);
-	--sl-color-black: oklch(1 0 0);
-	--sl-color-accent-low: oklch(0.95 0.03 255);
-	--sl-color-accent: oklch(0.62 0.19 259.8);
-	--sl-color-accent-high: oklch(0.45 0.17 260);
-	--sl-color-bg: oklch(0.986 0.002 248);
-	--sl-color-bg-nav: color-mix(in oklab, oklch(0.986 0.002 248) 85%, transparent);
-	--sl-color-bg-sidebar: oklch(0.986 0.002 248);
-	--sl-color-bg-inline-code: oklch(0.94 0.008 250);
-	--sl-color-hairline: oklch(0.9 0.01 250);
-	--sl-color-hairline-light: oklch(0.9 0.01 250);
-	--sl-color-hairline-shade: oklch(0.9 0.01 250);
+	--sl-color-white: #0f172a;
+	--sl-color-gray-1: #1e293b;
+	--sl-color-gray-2: #334155;
+	--sl-color-gray-3: #475569;
+	--sl-color-gray-4: #94a3b8;
+	--sl-color-gray-5: #e2e8f0;
+	--sl-color-gray-6: #f1f5f9;
+	--sl-color-gray-7: #f8fafc;
+	--sl-color-black: #ffffff;
+	--sl-color-accent-low: #d1fae5;
+	--sl-color-accent: #047857;
+	--sl-color-accent-high: #065f46;
+	--sl-color-bg: #f8fafc;
+	--sl-color-bg-nav: color-mix(in srgb, #ffffff 85%, transparent);
+	--sl-color-bg-sidebar: #f8fafc;
+	--sl-color-bg-inline-code: #f1f5f9;
+	--sl-color-hairline: #e2e8f0;
+	--sl-color-hairline-light: #e2e8f0;
+	--sl-color-hairline-shade: #e2e8f0;
 
-	--pf-card: oklch(1 0 0);
-	--pf-border: oklch(0.9 0.01 250);
-	--pf-muted: oklch(0.52 0.03 257);
-	--pf-secondary: oklch(0.94 0.008 250);
-	--pf-primary: oklch(0.62 0.19 259.8);
-	--pf-primary-fg: oklch(0.99 0 0);
-	--pf-accent-bg: oklch(0.95 0.03 255);
-	--pf-accent-fg: oklch(0.45 0.17 260);
-	--pf-success: oklch(0.62 0.15 155);
-	--pf-warning: oklch(0.7 0.15 75);
-	--pf-code: oklch(0.22 0.03 260);
-	--pf-shadow: 0 1px 2px oklch(0.24 0.03 258 / 0.04), 0 8px 24px -12px oklch(0.24 0.03 258 / 0.12);
-	--pf-grid-line: color-mix(in oklab, var(--pf-primary) 8%, transparent);
+	--pf-card: #ffffff;
+	--pf-raised: #f8fafc;
+	--pf-border: #e2e8f0;
+	--pf-muted: #475569;
+	--pf-secondary: #f1f5f9;
+	--pf-primary: #047857;
+	--pf-primary-fg: #ffffff;
+	--pf-primary-hover: #065f46;
+	--pf-accent-bg: #ecfdf5;
+	--pf-accent-fg: #065f46;
+	--pf-success: #059669;
+	--pf-warning: #b45309;
+	--pf-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+	--pf-glow: 0 0 40px -10px rgb(16 185 129 / 0.22);
+	--pf-grid-line: rgb(148 163 184 / 0.12);
+	--pf-gradient: linear-gradient(90deg, #047857, #0369a1);
+
+	--pf-t-core: #047857;
+	--pf-t-mtls: #0369a1;
+	--pf-t-eap: #6d28d9;
+	--pf-t-ops: #b45309;
+	--pf-t-ssh: #be123c;
 }
 
 body {
@@ -92,10 +117,10 @@ h4,
 .pf-display,
 .site-title {
 	font-family: var(--pf-font-display);
-	letter-spacing: -0.02em;
+	letter-spacing: -0.025em;
 }
 
-.sl-markdown-content :not(pre) > code {
+.sl-markdown-content :not(pre) > code:not(:where(.not-content *)) {
 	color: var(--pf-accent-fg);
 	background: var(--pf-secondary);
 	border-radius: 0.3rem;
@@ -143,6 +168,16 @@ nav.sidebar a[href^='/guides/'] {
 	align-items: center;
 }
 
+/* Current page in the sidebar: a tint and an accent bar, not a solid block */
+nav.sidebar a[aria-current='page'],
+nav.sidebar a[aria-current='page']:hover,
+nav.sidebar a[aria-current='page']:focus {
+	background: var(--pf-accent-bg);
+	color: var(--pf-accent-fg);
+	font-weight: 600;
+	box-shadow: inset 2px 0 0 var(--pf-primary);
+}
+
 /* Wide layouts for splash pages built from site components (home, path, guides) */
 main:has(.pf-wide) .sl-container {
 	max-width: 72rem;
@@ -166,7 +201,71 @@ main:has(.pf-wide) .content-panel + .content-panel {
 	background-image:
 		linear-gradient(var(--pf-grid-line) 1px, transparent 1px),
 		linear-gradient(90deg, var(--pf-grid-line) 1px, transparent 1px);
-	background-size: 32px 32px;
+	background-size: 40px 40px;
+}
+
+/* Small mono label above a section heading */
+.pf-eyebrow {
+	display: block;
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+	font-weight: 500;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--pf-primary);
+}
+
+/* Always-dark terminal window */
+.pf-terminal {
+	overflow: hidden;
+	border: 1px solid #1e293b;
+	border-radius: var(--pf-radius-lg);
+	background: var(--pf-terminal);
+	color: #e2e8f0;
+	box-shadow: var(--pf-shadow), var(--pf-glow);
+}
+.pf-terminal-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem;
+	padding: 0.6rem 0.9rem;
+	background: rgb(15 23 42 / 0.9);
+	border-bottom: 1px solid #1e293b;
+	font-family: var(--sl-font-mono);
+	font-size: 0.75rem;
+	color: #94a3b8;
+}
+.pf-dots {
+	display: inline-flex;
+	gap: 0.4rem;
+}
+.pf-dots span {
+	width: 0.7rem;
+	height: 0.7rem;
+	border-radius: 999px;
+}
+.pf-dots span:nth-child(1) {
+	background: rgb(244 63 94 / 0.8);
+}
+.pf-dots span:nth-child(2) {
+	background: rgb(245 158 11 / 0.8);
+}
+.pf-dots span:nth-child(3) {
+	background: rgb(16 185 129 / 0.8);
+}
+.pf-copy {
+	border: 1px solid #334155;
+	border-radius: 0.4rem;
+	background: #1e293b;
+	color: #cbd5e1;
+	padding: 0.2rem 0.55rem;
+	font: inherit;
+	cursor: pointer;
+}
+.pf-copy:hover {
+	background: #334155;
+	color: #f1f5f9;
 }
 
 .pf-tag {
@@ -184,16 +283,17 @@ main:has(.pf-wide) .content-panel + .content-panel {
 	display: inline-flex;
 	align-items: center;
 	gap: 0.5rem;
-	border-radius: 0.6rem;
-	padding: 0.7rem 1.2rem;
-	font-weight: 500;
+	border-radius: 0.75rem;
+	padding: 0.65rem 1.25rem;
+	font-size: 0.9rem;
+	font-weight: 600;
 	text-decoration: none;
 	border: 1px solid var(--pf-border);
 	background: var(--pf-card);
 	color: var(--sl-color-white);
 	transition:
-		transform 0.15s,
-		background-color 0.15s;
+		background-color 0.15s,
+		border-color 0.15s;
 }
 
 .pf-btn:hover {
@@ -209,9 +309,9 @@ main:has(.pf-wide) .content-panel + .content-panel {
 }
 
 .pf-btn-primary:hover {
-	background: var(--pf-primary);
+	background: var(--pf-primary-hover);
+	border-color: var(--pf-primary-hover);
 	color: var(--pf-primary-fg);
-	transform: translateY(-2px);
 }
 
 .pf-chip {
@@ -254,13 +354,14 @@ main:has(.pf-wide) .content-panel + .content-panel {
 	padding-top: 0;
 }
 
-/* Tips are green, notes blue, cautions amber */
+/* Tips are emerald, notes sky blue, cautions amber */
 .starlight-aside--tip {
 	--sl-color-asides-text-accent: var(--sl-color-green-high);
 	--sl-color-asides-border: var(--pf-success);
 	background-color: color-mix(in oklab, var(--pf-success) 8%, var(--sl-color-bg));
 }
 .starlight-aside--note {
-	--sl-color-asides-border: var(--pf-primary);
-	background-color: var(--pf-accent-bg);
+	--sl-color-asides-text-accent: var(--pf-t-mtls);
+	--sl-color-asides-border: var(--pf-t-mtls);
+	background-color: color-mix(in srgb, var(--pf-t-mtls) 7%, var(--sl-color-bg));
 }

@@ -26,13 +26,13 @@ export default defineConfig({
 			description:
 				'A free, hands-on place to learn certificate technologies. Build a real CA, secure services with mTLS and set up EAP-TLS using open-source tools.',
 			logo: {
-				src: './src/assets/logo.svg',
+				light: './src/assets/logo-light.svg',
+				dark: './src/assets/logo.svg',
 				alt: '',
 			},
 			favicon: '/favicon.svg',
 			customCss: [
-				'@fontsource-variable/dm-sans',
-				'@fontsource-variable/space-grotesk',
+				'@fontsource-variable/inter',
 				'@fontsource-variable/jetbrains-mono',
 				'./src/styles/custom.css',
 			],
@@ -49,7 +49,7 @@ export default defineConfig({
 					frames: { editorActiveTabIndicatorTopColor: 'transparent' },
 					borderRadius: '0.75rem',
 					codeFontFamily: "'JetBrains Mono Variable', ui-monospace, monospace",
-					uiFontFamily: "'DM Sans Variable', ui-sans-serif, system-ui, sans-serif",
+					uiFontFamily: "'Inter Variable', ui-sans-serif, system-ui, sans-serif",
 				},
 			},
 			plugins: [starlightLinksValidator()],
