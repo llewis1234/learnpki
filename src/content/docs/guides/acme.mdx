@@ -28,9 +28,11 @@ import Diagram from '../../../components/Diagram.astro';
 In earlier modules you typed a provisioner password for every certificate. That doesn't scale to hundreds of servers. With ACME, the proof is "I control this name", and the client does all the work.
 
 :::note[Before you start]
-- The CA from [module 2](/guides/build-your-ca/), running in its own terminal.
-- certbot. The lab VM has it. Port 80 must be free.
-- A second terminal for this module's commands.
+Do [module 2](/guides/build-your-ca/) and [module 3](/guides/issue-and-inspect/) first.
+
+- **Start your CA** in its own terminal and leave it running: `step-ca $(step path)/config/ca.json`. Enter the password you chose in module 2. If the CA is already running, skip this.
+- **Open a second terminal** for the commands on this page.
+- certbot is in the lab VM. It needs port 80, so nothing else may use that port.
 - If you did [module 6](/guides/operations/), your certificates come from `Intermediate CA 2`. If not, they come from the first intermediate.
 :::
 

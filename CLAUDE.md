@@ -22,7 +22,7 @@
 
 - Lessons live in `src/content/docs/guides/` and are ordered by the `module` frontmatter field. Each lesson sets `module`, `summary`, `topic` (PKI, mTLS, EAP-TLS, ACME, SSH, Tools), `level`, `minutes`, `track` (Core, mTLS, EAP-TLS, Operate, SSH), `requires` (module numbers to finish first), a numbered `sidebar.label`, and optional `cards` (flip cards) and `outline: true`. Tracks and their descriptions live in `src/data/lessons.ts`.
 - On the site, call a lesson a "module". Keep "guide" for future standalone pages about one task. The `/guides/` URLs stay as they are.
-- Each module opens with a `:::note[Before you start]` box: the CA state, provisioners, tools, free ports and terminals it needs.
+- Each module opens with a `:::note[Before you start]` box. It says which modules to do first, then lists actions, not states: start the CA (with the exact command), open the terminals, and anything special (ports, accounts, waits). Use inline code only in the box: an extra output block would break the `<lesson>:<n>` numbering in `labs/refresh-output.py`.
 - When adding a lesson, also add its slug to the `lessons` list in `astro.config.mjs`.
 - Use `.mdx` when a lesson needs `<Diagram kind="chain|mtls|eaptls" />`; otherwise `.md`.
 - Glossary terms live in `src/data/glossary.ts`. Each term has an anchor ID from `termId()`, so lessons can link to `/glossary/#<id>`.

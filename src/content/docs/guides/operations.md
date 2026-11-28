@@ -24,11 +24,13 @@ cards:
 A certificate is not a one-time job. It is issued, renewed, sometimes revoked, and always expires. This module runs that whole cycle on your CA from [module 2](/guides/build-your-ca/), then teaches you to debug the errors you'll see in real life.
 
 :::note[Before you start]
-- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
-- If you did [module 5](/guides/eap-tls-freeradius/), your CA has three JWK provisioners. When step asks which one to use, pick `admin@example.com`.
-- Time for a six-minute wait in "Break it: let a certificate expire".
-- You'll edit `ca.json` and restart the CA several times. Port 9443 must be free.
-- Two terminals for commands, as well as the CA's own.
+Do [module 2](/guides/build-your-ca/) and [module 3](/guides/issue-and-inspect/) first.
+
+- **Start your CA** in its own terminal and leave it running: `step-ca $(step path)/config/ca.json`. Enter the password you chose in module 2. If the CA is already running, skip this.
+- **Open two more terminals** for the commands on this page.
+- You edit `ca.json` and restart the CA several times. This module also uses port 9443, so nothing else may use it.
+- One lab waits six minutes for a certificate to expire.
+- If you did [module 5](/guides/eap-tls-freeradius/), your CA has three provisioners. When step asks which one to use, pick `admin@example.com`.
 :::
 
 Work in a new folder:

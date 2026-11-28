@@ -26,9 +26,10 @@ import Diagram from '../../../components/Diagram.astro';
 Your CA from [module 2](/guides/build-your-ca/) is running. Now put it to work. You'll get a server certificate and a client certificate, read every field, and check the chain the way a browser does.
 
 :::note[Before you start]
-- The CA from [module 2](/guides/build-your-ca/), running in its own terminal.
-- The password of the `admin@example.com` provisioner.
-- A second terminal for this module's commands.
+Do [module 2](/guides/build-your-ca/) first.
+
+- **Start your CA** in its own terminal and leave it running: `step-ca $(step path)/config/ca.json`. Enter the password you chose in module 2. If the CA is already running, skip this.
+- **Open a second terminal** for the commands on this page.
 :::
 
 ## How issuing works

@@ -30,10 +30,11 @@ import Diagram from '../../../components/Diagram.astro';
 In this lab you'll build the server side with FreeRADIUS and test it with `eapol_test`. You don't need an access point. Everything runs in the [lab VM](/setup/).
 
 :::note[Before you start]
-- The CA from [module 2](/guides/build-your-ca/), running in its own terminal, and the provisioner password.
-- How to issue a certificate, from [module 3](/guides/issue-and-inspect/).
-- FreeRADIUS and `eapol_test`, with the FreeRADIUS service stopped. The lab VM has this.
-- Three terminals: the CA, FreeRADIUS in debug mode, and your commands.
+Do [module 2](/guides/build-your-ca/) and [module 3](/guides/issue-and-inspect/) first.
+
+- **Start your CA** in its own terminal and leave it running: `step-ca $(step path)/config/ca.json`. Enter the password you chose in module 2. If the CA is already running, skip this.
+- **Open two more terminals.** One runs FreeRADIUS, the other runs your commands.
+- FreeRADIUS and `eapol_test` are in the lab VM. The FreeRADIUS service is off there, because you start it yourself in this module.
 :::
 
 ## Why certificates for network access?
